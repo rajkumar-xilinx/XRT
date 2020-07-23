@@ -2118,12 +2118,13 @@ static int writeBitstream(std::FILE *flashDev, int index, unsigned int addr,
 }
 
 static int programXSpiDrv(std::FILE *mFlashDev, std::istream& mcsStream,
-    int index, uint32_t addressShift)
+    int index, uint32_t addressShift, pcidev::pci_device *dev)
 {
     // Parse MCS data and write each contiguous chunk to flash.
     std::vector<unsigned char> buf;
     unsigned int curAddr = UINT_MAX;
     unsigned int nextAddr = 0;
+    unsigned int storeAddr = 0;
     int ret;
 
     while (nextAddr != UINT_MAX) {
@@ -2136,11 +2137,16 @@ static int programXSpiDrv(std::FILE *mFlashDev, std::istream& mcsStream,
             << std::hex << curAddr << std::dec << std::endl;
 
         std::cout << "Writing bitstream to flash " << index << ":" << std::endl;
+        storeAddr = curAddr + addressShift;
         ret = writeBitstream(mFlashDev, index, curAddr + addressShift, buf);
         if (ret)
             return ret;
         curAddr = nextAddr;
     }
+
+    std::string lvl = std::to_string(storeAddr);
+    std::string errmsg;
+    dev->sysfs_put("icap_controller", "load_flash_addr", errmsg, lvl);
 
     return 0;
 }
@@ -2152,7 +2158,7 @@ int XSPI_Flasher::upgradeFirmware1Drv(std::istream& mcsStream,
     uint32_t bsGuardAddr;
 
     if (mcsStreamIsGolden(mcsStream))
-        return programXSpiDrv(mFlashDev, mcsStream, 0, 0);
+        return programXSpiDrv(mFlashDev, mcsStream, 0, 0, mDev.get());
 
     ret = bitstreamGuardAddress(mDev.get(), bsGuardAddr);
     if (ret)
@@ -2175,7 +2181,7 @@ int XSPI_Flasher::upgradeFirmware1Drv(std::istream& mcsStream,
     }
 
     // Write MCS
-    ret = programXSpiDrv(mFlashDev, mcsStream, 0, bitstreamGuardSize);
+    ret = programXSpiDrv(mFlashDev, mcsStream, 0, bitstreamGuardSize, mDev.get());
     if (ret)
         return ret;
 
@@ -2190,10 +2196,10 @@ int XSPI_Flasher::upgradeFirmware2Drv(std::istream& mcsStream0,
     uint32_t bsGuardAddr;
 
     if (mcsStreamIsGolden(mcsStream0)) {
-        ret = programXSpiDrv(mFlashDev, mcsStream0, 0, 0);
+        ret = programXSpiDrv(mFlashDev, mcsStream0, 0, 0, mDev.get());
         if (ret)
             return ret;
-        return programXSpiDrv(mFlashDev, mcsStream1, 1, 0);
+        return programXSpiDrv(mFlashDev, mcsStream1, 1, 0, mDev.get());
     }
 
     ret = bitstreamGuardAddress(mDev.get(), bsGuardAddr);
@@ -2217,10 +2223,10 @@ int XSPI_Flasher::upgradeFirmware2Drv(std::istream& mcsStream0,
     }
 
     // Write MCS
-    ret = programXSpiDrv(mFlashDev, mcsStream0, 0, bitstreamGuardSize);
+    ret = programXSpiDrv(mFlashDev, mcsStream0, 0, bitstreamGuardSize, mDev.get());
     if (ret)
         return ret;
-    ret = programXSpiDrv(mFlashDev, mcsStream1, 1, bitstreamGuardSize);
+    ret = programXSpiDrv(mFlashDev, mcsStream1, 1, bitstreamGuardSize, mDev.get());
     if (ret)
         return ret;
 

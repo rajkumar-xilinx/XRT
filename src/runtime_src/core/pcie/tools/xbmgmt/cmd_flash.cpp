@@ -315,6 +315,13 @@ static int updateShellAndSC(unsigned boardIdx, DSAInfo& candidate, bool& reboot)
                 << flasher.sGetDBDF() << "]" << std::endl;
         } else {
             reboot = true;
+            std::string errmsg;
+            std::string lvl = std::to_string(1);
+            auto mgmt_dev = pcidev::get_dev(boardIdx, false);
+            auto dev = mgmt_dev.get();
+            dev->sysfs_put("icap_controller", "enable", errmsg, lvl);
+            if (errmsg.empty())
+                std::cout << "Successfully configured icap_controller, reboot is not needed" << std::endl;
         }
     }
 

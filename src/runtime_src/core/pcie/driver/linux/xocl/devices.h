@@ -246,6 +246,7 @@ enum {
 #define	XOCL_P2P		"p2p"
 #define	XOCL_PMC		"pmc"
 #define	XOCL_INTC		"intc"
+#define	XOCL_ICAP_CNTRL		"icap_controller"
 
 #define XOCL_DEVNAME(str)	str SUBDEV_SUFFIX
 
@@ -290,6 +291,7 @@ enum subdev_id {
 	XOCL_SUBDEV_SPC,
 	XOCL_SUBDEV_PMC,
 	XOCL_SUBDEV_INTC,
+	XOCL_SUBDEV_ICAP_CNTRL,
 	XOCL_SUBDEV_NUM
 };
 
@@ -1545,6 +1547,24 @@ struct xocl_subdev_map {
 		.override_idx = -1,			\
 	}
 
+#define XOCL_RES_ICAP_CNTRL				\
+	((struct resource []) {				\
+		{					\
+			.start = 0x380000,		\
+			.end = 0x38000F,		\
+			.flags = IORESOURCE_MEM,	\
+		},					\
+	 })
+
+#define	XOCL_DEVINFO_ICAP_CNTRL			\
+	{						\
+		XOCL_SUBDEV_ICAP_CNTRL,			\
+		XOCL_ICAP_CNTRL,			\
+		XOCL_RES_ICAP_CNTRL,			\
+		ARRAY_SIZE(XOCL_RES_ICAP_CNTRL),	\
+		.override_idx = -1,			\
+	}
+
 #define	XOCL_RES_UARTLITE				\
 	((struct resource []) {				\
 		{					\
@@ -2060,6 +2080,7 @@ struct xocl_subdev_map {
 			XOCL_DEVINFO_FMGR,				\
 			XOCL_DEVINFO_XMC_SCALING_U2,			\
 			XOCL_DEVINFO_FLASH,				\
+			XOCL_DEVINFO_ICAP_CNTRL,			\
 		})
 
 #define	XOCL_BOARD_MGMT_DEFAULT						\

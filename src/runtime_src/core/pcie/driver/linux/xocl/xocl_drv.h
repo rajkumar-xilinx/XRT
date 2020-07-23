@@ -1957,4 +1957,7 @@ void xocl_fini_pmc(void);
 
 int __init xocl_init_intc(void);
 void xocl_fini_intc(void);
+
+int __init xocl_init_icap_controller(void);
+void xocl_fini_icap_controller(void);
 #endif
