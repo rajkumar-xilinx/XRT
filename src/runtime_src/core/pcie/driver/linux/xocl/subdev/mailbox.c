@@ -242,6 +242,7 @@ MODULE_PARM_DESC(mailbox_no_intr,
 #define	BYTE_TO_MB(x)		((x)>>20)
 
 #define MB_SW_ONLY(mbx) ((mbx)->mbx_regs == NULL)
+static u32 TEMP_MSG_TIMEOUT = 0;
 /*
  * Mailbox IP register layout
  */
@@ -628,12 +629,19 @@ void timeout_msg(struct mailbox_channel *ch)
 	struct list_head *pos, *n;
 	struct list_head l = LIST_HEAD_INIT(l);
 	bool reschedule = false;
+	static int retry = 2;
 
 	/* Check active msg first. */
 	msg = ch->mbc_cur_msg;
 	if (msg) {
 		if (msg->mbm_ttl == 0) {
-			MBX_WARN(mbx, "found outstanding msg time'd out");
+			MBX_WARN(mbx, "found outstanding msg time'd out, id: %lu, retry: %d", msg->mbm_req_id, retry);
+			if (retry != 0) {
+				msg->mbm_ttl = TEMP_MSG_TIMEOUT;
+				reschedule = true;
+				retry--;
+				goto done;
+			}
 			if (!mbx->mbx_peer_dead) {
 				MBX_WARN(mbx, "peer becomes dead");
 				/* Peer is not active any more. */
@@ -652,6 +660,7 @@ void timeout_msg(struct mailbox_channel *ch)
 		}
 	}
 
+done:
 	mutex_lock(&ch->mbc_mutex);
 
 	list_for_each_safe(pos, n, &ch->mbc_msgs) {
@@ -1249,6 +1258,7 @@ static void msg_timer_on(struct mailbox_msg *msg, u32 ttl)
 	}
 
 	msg->mbm_ttl = MAILBOX_SEC2TIMER(ttl);
+	TEMP_MSG_TIMEOUT = msg->mbm_ttl;
 }
 
 /* Prepare outstanding msg for sending outgoing msg. */
