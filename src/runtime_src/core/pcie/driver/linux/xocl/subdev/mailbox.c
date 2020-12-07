@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Xilinx, Inc. All rights reserved.
+ * Copyright (C) 2016-2020 Xilinx, Inc. All rights reserved.
  *
  * Authors: Max Zhen <maxz@xilinx.com>
  *
@@ -238,11 +238,11 @@ MODULE_PARM_DESC(mailbox_no_intr,
 #define	MAX_MSG_QUEUE_SZ	(PAGE_SIZE << 16)
 #define	MAX_MSG_QUEUE_LEN	5
 #define	MAX_MSG_SZ		(PAGE_SIZE << 15)
+#define	MAX_MSG_RETRY		3
 
 #define	BYTE_TO_MB(x)		((x)>>20)
 
 #define MB_SW_ONLY(mbx) ((mbx)->mbx_regs == NULL)
-static u32 TEMP_MSG_TIMEOUT = 0;
 /*
  * Mailbox IP register layout
  */
@@ -277,6 +277,8 @@ struct mailbox_msg {
 	u32			mbm_flags;
 	u32			mbm_ttl;
 	bool			mbm_chan_sw;
+	u32			mbm_ttl_init;
+	int			mbm_retry;
 };
 
 /*
@@ -629,19 +631,12 @@ void timeout_msg(struct mailbox_channel *ch)
 	struct list_head *pos, *n;
 	struct list_head l = LIST_HEAD_INIT(l);
 	bool reschedule = false;
-	static int retry = 2;
 
 	/* Check active msg first. */
 	msg = ch->mbc_cur_msg;
 	if (msg) {
-		if (msg->mbm_ttl == 0) {
-			MBX_WARN(mbx, "found outstanding msg time'd out, id: %lu, retry: %d", msg->mbm_req_id, retry);
-			if (retry != 0) {
-				msg->mbm_ttl = TEMP_MSG_TIMEOUT;
-				reschedule = true;
-				retry--;
-				goto done;
-			}
+		if ((msg->mbm_ttl == 0) && (msg->mbm_retry == 0)) {
+			MBX_WARN(mbx, "found outstanding msg time'd out");
 			if (!mbx->mbx_peer_dead) {
 				MBX_WARN(mbx, "peer becomes dead");
 				/* Peer is not active any more. */
@@ -654,6 +649,12 @@ void timeout_msg(struct mailbox_channel *ch)
 
 			chan_msg_done(ch, -ETIME);
 		} else {
+			if (msg->mbm_ttl == 0) {
+				msg->mbm_ttl = msg->mb_ttl_init;
+				msg->mbm_retry--;
+				MBX_WARN(mbx, "found outstanding msg time'd out, retrying: %d",
+						 msg->mbm_retry);
+			}
 			msg->mbm_ttl--;
 			/* Need to come back again for this one. */
 			reschedule = true;
@@ -1257,8 +1258,8 @@ static void msg_timer_on(struct mailbox_msg *msg, u32 ttl)
 		}
 	}
 
-	msg->mbm_ttl = MAILBOX_SEC2TIMER(ttl);
-	TEMP_MSG_TIMEOUT = msg->mbm_ttl;
+	msg->mbm_ttl_init = MAILBOX_SEC2TIMER(ttl);
+	msg->mbm_ttl = msg->mbm_ttl_init;
 }
 
 /* Prepare outstanding msg for sending outgoing msg. */
@@ -1598,6 +1599,8 @@ int mailbox_request(struct platform_device *pdev, void *req, size_t reqlen,
 	reqmsg->mbm_cb_arg = NULL;
 	reqmsg->mbm_req_id = (uintptr_t)reqmsg->mbm_data;
 	reqmsg->mbm_flags |= XCL_MB_REQ_FLAG_REQUEST;
+	if (((struct xcl_mailbox_req *)req)->req == XCL_MAILBOX_REQ_HOT_RESET)
+		reqmsg->mbm_retry = MAX_MSG_RETRY;
 
 	respmsg = alloc_msg(resp, *resplen);
 	if (!respmsg)
@@ -1607,6 +1610,7 @@ int mailbox_request(struct platform_device *pdev, void *req, size_t reqlen,
 	/* Only interested in response w/ same ID. */
 	respmsg->mbm_req_id = reqmsg->mbm_req_id;
 	respmsg->mbm_chan_sw = sw_ch;
+
 
 	/* Always enqueue RX msg before TX one to avoid race. */
 	rv = chan_msg_enqueue(&mbx->mbx_rx, respmsg);
