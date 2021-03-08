@@ -143,12 +143,12 @@ set(XMA_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(XMA_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/xrt")
 set(XMA_VERSION_STRING ${XRT_VERSION_MAJOR}.${XRT_VERSION_MINOR}.${XRT_VERSION_PATCH})
 set(XMA_SOVERSION ${XRT_SOVERSION})
-add_subdirectory(xma)
+#add_subdirectory(xma)
 #XMA settings END
 
 # --- Python bindings ---
 set(PY_INSTALL_DIR "${XRT_INSTALL_DIR}/python")
-add_subdirectory(python)
+#add_subdirectory(python)
 
 # --- Python tests ---
 set(PY_TEST_SRC
@@ -161,7 +161,7 @@ install (FILES ${PY_TEST_SRC}
   PERMISSIONS OWNER_READ OWNER_EXECUTE OWNER_WRITE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
   DESTINATION ${XRT_INSTALL_DIR}/test)
 
-add_subdirectory("../tests/validate" "${CMAKE_CURRENT_BINARY_DIR}/validate_build")
+#add_subdirectory("../tests/validate" "${CMAKE_CURRENT_BINARY_DIR}/validate_build")
 message("-- XRT version: ${XRT_VERSION_STRING}")
 
 # -- CPack
