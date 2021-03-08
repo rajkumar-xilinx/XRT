@@ -15,7 +15,7 @@
 ccflags-y	+= -D_QDMA4_DEBUGFS_
 
 xocl_lib-y	:= ../lib/libxdma.o
-xocl_lib-y	+=  \
+#xocl_lib-y	+=  \
 		../lib/libqdma/libqdma_config.o	\
 		../lib/libqdma/libqdma_export.o	\
 		../lib/libqdma/qdma_context.o	\
@@ -34,7 +34,7 @@ xocl_lib-y	+=  \
 		../lib/libqdma/thread.o	\
 		../lib/libqdma/xdev.o
 
-xocl_lib-y	+=  \
+#xocl_lib-y	+=  \
 		../lib/libqdma4/stmc.o	\
 		../lib/libqdma4/libqdma_config.o	\
 		../lib/libqdma4/libqdma_export.o   	\

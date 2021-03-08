@@ -934,7 +934,8 @@ int xocl_refresh_subdevs(struct xocl_dev *xdev)
 	ret = xocl_p2p_init(xdev);
 	if (ret) {
 		userpf_err(xdev, "failed to init p2p memory");
-		goto failed;
+ret = 0;
+//		goto failed;
 	}
 
 	(void) xocl_peer_listen(xdev, xocl_mailbox_srv, (void *)xdev);
@@ -1632,7 +1633,8 @@ int xocl_userpf_probe(struct pci_dev *pdev,
 	ret = xocl_p2p_init(xdev);
 	if (ret) {
 		xocl_err(&pdev->dev, "failed to init p2p memory");
-		goto failed;
+ret = 0;
+//		goto failed;
 	}
 
 	snprintf(wq_name, sizeof(wq_name), "xocl_wq%d", xdev->core.dev_minor);
@@ -1753,80 +1755,29 @@ static struct pci_driver userpf_driver = {
 /* INIT */
 static int (*xocl_drv_reg_funcs[])(void) __initdata = {
 	xocl_init_feature_rom,
-	xocl_init_version_control,
 	xocl_init_iores,
 	xocl_init_xdma,
-	xocl_init_qdma,
-	xocl_init_qdma4,
 	xocl_init_mb_scheduler,
 	xocl_init_mailbox,
 	xocl_init_xmc,
-	xocl_init_xmc_u2,
 	xocl_init_icap,
-	xocl_init_clock,
-	xocl_init_xvc,
 	xocl_init_firewall,
-	xocl_init_mig,
-	xocl_init_dna,
-	xocl_init_mailbox_versal,
-	xocl_init_aim,
-	xocl_init_am,
-	xocl_init_asm,
-	xocl_init_trace_fifo_lite,
-	xocl_init_trace_fifo_full,
-	xocl_init_trace_funnel,
-	xocl_init_trace_s2mm,
-	xocl_init_mem_hbm,
 	/* Initial intc sub-device before CU/ERT sub-devices */
-	xocl_init_intc,
 	xocl_init_cu,
 	xocl_init_addr_translator,
-	xocl_init_p2p,
-	xocl_init_spc,
-	xocl_init_lapc,
-	xocl_init_msix_xdma,
-	xocl_init_ert_user,
-	xocl_init_ert_versal,
-	xocl_init_m2m,
 };
 
 static void (*xocl_drv_unreg_funcs[])(void) = {
 	xocl_fini_feature_rom,
-	xocl_fini_version_control,
 	xocl_fini_iores,
 	xocl_fini_xdma,
-	xocl_fini_qdma,
-	xocl_fini_qdma4,
 	xocl_fini_mb_scheduler,
 	xocl_fini_mailbox,
 	xocl_fini_xmc,
-	xocl_fini_xmc_u2,
 	xocl_fini_icap,
-	xocl_fini_clock,
-	xocl_fini_xvc,
 	xocl_fini_firewall,
-	xocl_fini_mig,
-	xocl_fini_dna,
-	xocl_fini_mailbox_versal,
-	xocl_fini_aim,
-	xocl_fini_am,
-	xocl_fini_asm,
-	xocl_fini_trace_fifo_lite,
-	xocl_fini_trace_fifo_full,
-	xocl_fini_trace_funnel,
-	xocl_fini_trace_s2mm,
-	xocl_fini_mem_hbm,
 	xocl_fini_cu,
 	xocl_fini_addr_translator,
-	xocl_fini_p2p,
-	xocl_fini_spc,
-	xocl_fini_lapc,
-	xocl_fini_msix_xdma,
-	xocl_fini_ert_user,
-	xocl_fini_ert_versal,
-	xocl_fini_m2m,
-	/* Remove intc sub-device after CU/ERT sub-devices */
-	xocl_fini_intc,
 };
 
 static int __init xocl_init(void)
