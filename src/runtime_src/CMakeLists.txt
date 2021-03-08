@@ -4,7 +4,7 @@
 if( NOT WIN32)
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "Release" AND ${XRT_NATIVE_BUILD} STREQUAL "yes")
-  add_subdirectory(doc)
+#  add_subdirectory(doc)
 endif()
 
 # Default include search path starts at runtime_src
@@ -27,16 +27,16 @@ add_compile_options("-fPIC")
 if (${XRT_NATIVE_BUILD} STREQUAL "yes")
   add_compile_options("-Wall" "-Werror")
 endif()
-add_subdirectory(xdp)
+#add_subdirectory(xdp)
 
 # TODO version.h was included.
 # Remove this limitation once we can generate version.h for mpsoc.
 if (${XRT_NATIVE_BUILD} STREQUAL "yes")
-  add_subdirectory(tools/xclbinutil)
+#  add_subdirectory(tools/xclbinutil)
 endif()
-add_subdirectory(xocl)
-add_subdirectory(xrt)
-add_subdirectory(ert)
+#add_subdirectory(xocl)
+#add_subdirectory(xrt)
+#add_subdirectory(ert)
 if (${XRT_NATIVE_BUILD} STREQUAL "yes")
   # Only for host native build.
   # For embedded, headers and libraries are installed in /usr
