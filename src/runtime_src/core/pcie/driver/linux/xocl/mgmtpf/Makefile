@@ -42,40 +42,40 @@ drv_common-y   := $(common_dir)/xrt_xclbin.o
 
 xclmgmt-y := \
 	../xocl_subdev.o \
+	../subdev/mailbox.o \
+	../subdev/clock.o \
 	../xocl_ctx.o \
 	../xocl_thread.o \
 	../xocl_fdt.o \
-	../xocl_xclbin.o \
 	../subdev/sysmon.o \
 	../subdev/feature_rom.o \
-	../subdev/microblaze.o \
-	../subdev/ps.o \
-	../subdev/firewall.o \
-	../subdev/xvc.o \
-	../subdev/nifd.o \
-	../subdev/xiic.o \
-	../subdev/mailbox.o \
-	../subdev/icap.o \
-	../subdev/clock.o \
-	../subdev/mig.o \
+	../subdev/ert.o \
 	../subdev/xmc.o \
-	../subdev/xmc_u2.o \
-	../subdev/dna.o \
+	../subdev/firewall.o \
+	../subdev/icap.o \
 	../subdev/fmgr.o \
-	../subdev/mgmt_msix.o \
 	../subdev/flash.o \
 	../subdev/iores.o \
 	../subdev/axigate.o \
-	../subdev/ospi_versal.o \
-	../subdev/ert.o \
-	../subdev/ddr_srsr.o \
-	../subdev/memory_hbm.o \
-	../subdev/ulite.o \
-	../subdev/calib_storage.o \
-	../subdev/pmc.o \
-	../subdev/icap_cntrl.o \
-	../subdev/version_ctrl.o \
-	../subdev/pcie_firewall.o \
+#	../subdev/version_ctrl.o
+#	../subdev/microblaze.o 
+#	../xocl_xclbin.o 
+#	../subdev/ps.o 
+#	../subdev/xvc.o 
+#	../subdev/nifd.o 
+#	../subdev/xiic.o 
+#	../subdev/mig.o 
+#	../subdev/xmc_u2.o 
+#	../subdev/dna.o 
+#	../subdev/mgmt_msix.o 
+#	../subdev/ospi_versal.o 
+#	../subdev/ddr_srsr.o 
+#	../subdev/memory_hbm.o 
+#	../subdev/ulite.o 
+#	../subdev/calib_storage.o 
+#	../subdev/pmc.o 
+#	../subdev/icap_cntrl.o 
+#	../subdev/pcie_firewall.o 
 	$(drv_common-y) \
 	mgmt-core.o \
 	mgmt-cw.o \

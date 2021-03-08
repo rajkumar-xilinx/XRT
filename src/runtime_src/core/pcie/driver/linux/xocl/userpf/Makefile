@@ -52,43 +52,43 @@ xocl-y := \
 	../xocl_ctx.o \
 	../xocl_thread.o \
 	../xocl_fdt.o \
-	../xocl_xclbin.o \
-	../subdev/xdma.o \
-	../subdev/qdma.o \
-	../subdev/qdma4.o \
 	../subdev/feature_rom.o \
 	../subdev/mb_scheduler.o \
 	../subdev/mailbox.o \
-	../subdev/xvc.o \
 	../subdev/icap.o \
-	../subdev/clock.o \
 	../subdev/xmc.o \
-	../subdev/xmc_u2.o \
 	../subdev/firewall.o \
-	../subdev/mig.o \
-	../subdev/dna.o \
 	../subdev/iores.o \
-	../subdev/mailbox_versal.o\
-	../subdev/aim.o\
-	../subdev/am.o\
-	../subdev/asm.o\
-	../subdev/trace_fifo_lite.o\
-	../subdev/trace_fifo_full.o\
-	../subdev/trace_funnel.o\
-	../subdev/trace_s2mm.o\
-	../subdev/lapc.o\
-	../subdev/spc.o\
-	../subdev/ddr_srsr.o\
-	../subdev/memory_hbm.o \
-	../subdev/address_translator.o \
 	../subdev/cu.o \
-	../subdev/p2p.o \
-	../subdev/intc.o \
-	../subdev/m2m.o \
-	../subdev/version_ctrl.o \
-	../subdev/msix_xdma.o \
-	../subdev/ert_user.o \
-	../subdev/ert_versal.o \
+#	../xocl_xclbin.o 
+#	../subdev/xdma.o 
+#	../subdev/qdma.o 
+#	../subdev/qdma4.o 
+#	../subdev/xvc.o 
+#	../subdev/clock.o 
+#	../subdev/xmc_u2.o 
+#	../subdev/mig.o 
+#	../subdev/dna.o 
+#	../subdev/mailbox_versal.o
+#	../subdev/aim.o
+#	../subdev/am.o
+#	../subdev/asm.o
+#	../subdev/trace_fifo_lite.o
+#	../subdev/trace_fifo_full.o
+#	../subdev/trace_funnel.o
+#	../subdev/trace_s2mm.o
+#	../subdev/lapc.o
+#	../subdev/spc.o
+#	../subdev/ddr_srsr.o
+#	../subdev/memory_hbm.o 
+#	../subdev/address_translator.o 
+#	../subdev/p2p.o 
+#	../subdev/intc.o 
+#	../subdev/m2m.o 
+#	../subdev/version_ctrl.o
+#	../subdev/msix_xdma.o 
+#	../subdev/ert_user.o 
+#	../subdev/ert_versal.o 
 	$(xocl_lib-y)	\
 	$(drv_common-y) \
 	xocl_drv.o	\

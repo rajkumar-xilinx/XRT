@@ -185,56 +185,56 @@ SET (XRT_DKMS_DRIVER_SRCS
   xocl/lib/libfdt/libfdt_env.h
   xocl/lib/libfdt/libfdt_internal.h
   xocl/subdev/xdma.c
-  xocl/subdev/qdma.c
-  xocl/subdev/qdma4.c
+  #xocl/subdev/qdma.c
+  #xocl/subdev/qdma4.c
   xocl/subdev/feature_rom.c
   xocl/subdev/mb_scheduler.c
-  xocl/subdev/xvc.c
-  xocl/subdev/nifd.c
+  #xocl/subdev/xvc.c
+  #xocl/subdev/nifd.c
   xocl/subdev/sysmon.c
   xocl/subdev/firewall.c
   xocl/subdev/microblaze.c
-  xocl/subdev/ps.c
-  xocl/subdev/xiic.c
+  #xocl/subdev/ps.c
+  #xocl/subdev/xiic.c
   xocl/subdev/mailbox.c
   xocl/subdev/icap.c
   xocl/subdev/clock.c
   xocl/subdev/iores.c
   xocl/subdev/axigate.c
-  xocl/subdev/mig.c
+  #xocl/subdev/mig.c
   xocl/subdev/xmc.c
-  xocl/subdev/xmc_u2.c
-  xocl/subdev/dna.c
+  #xocl/subdev/xmc_u2.c
+  #xocl/subdev/dna.c
   xocl/subdev/fmgr.c
-  xocl/subdev/mgmt_msix.c
+  #xocl/subdev/mgmt_msix.c
   xocl/subdev/flash.c
-  xocl/subdev/mailbox_versal.c
-  xocl/subdev/ospi_versal.c
+  #xocl/subdev/mailbox_versal.c
+  #xocl/subdev/ospi_versal.c
   xocl/subdev/ert.c
-  xocl/subdev/aim.c
-  xocl/subdev/am.c
-  xocl/subdev/asm.c
-  xocl/subdev/trace_fifo_lite.c
-  xocl/subdev/trace_fifo_full.c
-  xocl/subdev/trace_funnel.c
-  xocl/subdev/trace_s2mm.c
-  xocl/subdev/spc.c
-  xocl/subdev/lapc.c
-  xocl/subdev/memory_hbm.c
-  xocl/subdev/ddr_srsr.c
-  xocl/subdev/ulite.c
-  xocl/subdev/calib_storage.c
+  #xocl/subdev/aim.c
+  #xocl/subdev/am.c
+  #xocl/subdev/asm.c
+  #xocl/subdev/trace_fifo_lite.c
+  #xocl/subdev/trace_fifo_full.c
+  #xocl/subdev/trace_funnel.c
+  #xocl/subdev/trace_s2mm.c
+  #xocl/subdev/spc.c
+  #xocl/subdev/lapc.c
+  #xocl/subdev/memory_hbm.c
+  #xocl/subdev/ddr_srsr.c
+  #xocl/subdev/ulite.c
+  #xocl/subdev/calib_storage.c
   xocl/subdev/address_translator.c
   xocl/subdev/cu.c
-  xocl/subdev/p2p.c
-  xocl/subdev/pmc.c
-  xocl/subdev/intc.c
-  xocl/subdev/icap_cntrl.c
-  xocl/subdev/m2m.c
-  xocl/subdev/version_ctrl.c
-  xocl/subdev/msix_xdma.c
-  xocl/subdev/ert_user.c
-  xocl/subdev/ert_versal.c
+  #xocl/subdev/p2p.c
+  #xocl/subdev/pmc.c
+  #xocl/subdev/intc.c
+  #xocl/subdev/icap_cntrl.c
+  #xocl/subdev/m2m.c
+  #xocl/subdev/version_ctrl.c
+  #xocl/subdev/msix_xdma.c
+  #xocl/subdev/ert_user.c
+  #xocl/subdev/ert_versal.c
   xocl/subdev/pcie_firewall.c
   xocl/Makefile
   )
