@@ -214,6 +214,8 @@ int zocl_iommu_unmap_bo(struct drm_device *dev, struct drm_zocl_bo *bo);
 
 int zocl_init_sysfs(struct device *dev);
 void zocl_fini_sysfs(struct device *dev);
+int zocl_init_ert_rpu(struct device *dev);
+void zocl_fini_ert_rpu(struct device *dev);
 void zocl_free_sections(struct drm_zocl_dev *zdev);
 void zocl_free_bo(struct drm_gem_object *obj);
 void zocl_drm_free_bo(struct drm_zocl_bo *bo);

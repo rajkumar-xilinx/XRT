@@ -55,6 +55,7 @@ zocl-y := \
 	cu.o \
 	zocl_generic_cu.o \
 	zocl_error.o \
+	zocl_ert_rpu.o \
 	zocl_aie.o
 
 obj-m	+= zocl.o

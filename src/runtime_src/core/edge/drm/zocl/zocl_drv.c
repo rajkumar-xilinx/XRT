@@ -988,6 +988,11 @@ static int zocl_drm_platform_probe(struct platform_device *pdev)
 		if (ret)
 			goto err_sched;
 	}
+	ret = zocl_init_ert_rpu(drm->dev);
+	if (ret)
+		DRM_ERROR("zocl_init_ert_rpu failed, ret: %d\n", ret);
+	else
+		DRM_INFO("zocl_init_ert_rpu successful.\n");
 
 	return 0;
 
@@ -1035,6 +1040,7 @@ static int zocl_drm_platform_remove(struct platform_device *pdev)
 	mutex_destroy(&zdev->zdev_xclbin_lock);
 	zocl_destroy_aie(zdev);
 	mutex_destroy(&zdev->aie_lock);
+	zocl_fini_ert_rpu(drm->dev);
 	zocl_fini_sysfs(drm->dev);
 	zocl_fini_error(zdev);
 
