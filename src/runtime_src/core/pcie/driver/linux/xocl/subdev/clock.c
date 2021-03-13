@@ -931,6 +931,12 @@ static int set_and_verify_freqs(struct clock *clock, unsigned short *freqs,
 	if (err)
 		goto done;
 
+	/* skip verify freqs on 0RP shell as clocks & freq_scaler are not in same
+	 * partition, hence clock driver unable to read these eps.
+	 */
+	if (xocl_flat_shell(xdev))
+		return 0;
+
 	for (i = 0; i < min(CLOCK_MAX_NUM_CLOCKS, num_freqs); ++i) {
 		if (!freqs[i])
 			continue;

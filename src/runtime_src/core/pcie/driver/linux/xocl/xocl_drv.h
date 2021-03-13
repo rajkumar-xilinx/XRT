@@ -607,6 +607,21 @@ struct xocl_rom_funcs {
 #define xocl_rom_get_uuid(xdev)				\
 	(ROM_CB(xdev, get_uuid) ? ROM_OPS(xdev)->get_uuid(ROM_DEV(xdev)) : NULL)
 
+/* icap_cnctrl callbacks */
+struct xocl_icap_cntrl_funcs {
+	struct xocl_subdev_funcs common_funcs;
+	bool (*flat_shell)(struct platform_device *pdev);
+};
+
+#define IC_DEV(xdev)	\
+	SUBDEV(xdev, XOCL_SUBDEV_ICAP_CNTRL).pldev
+#define	IC_OPS(xdev)	\
+	((struct xocl_icap_cntrl_funcs *)SUBDEV(xdev, XOCL_SUBDEV_ICAP_CNTRL).ops)
+#define IC_CB(xdev, cb)	\
+	(IC_DEV(xdev) && IC_OPS(xdev) && IC_OPS(xdev)->cb)
+#define	xocl_flat_shell(xdev)		\
+	(IC_CB(xdev, flat_shell) ? IC_OPS(xdev)->flat_shell(IC_DEV(xdev)) : false)
+
 /* version_ctrl callbacks */
 struct xocl_version_ctrl_funcs {
 	struct xocl_subdev_funcs common_funcs;
