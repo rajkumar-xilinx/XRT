@@ -2143,6 +2143,7 @@ const void *xocl_fdt_getprop(xdev_handle_t xdev_hdl, void *blob, int off,
 			     char *name, int *lenp);
 int xocl_fdt_unblock_ip(xdev_handle_t xdev_hdl, void *blob);
 const char *xocl_fdt_get_ert_fw_ver(xdev_handle_t xdev_hdl, void *blob);
+bool xocl_fdt_get_freq_cnt_eps(xdev_handle_t xdev_hdl, void *blob, u64 *base);
 
 /* init functions */
 int __init xocl_init_userpf(void);

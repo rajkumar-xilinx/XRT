@@ -1885,3 +1885,33 @@ const char *xocl_fdt_get_ert_fw_ver(xdev_handle_t xdev_hdl, void *blob)
 
 	return fw_ver;
 }
+
+bool xocl_fdt_get_freq_cnt_eps(xdev_handle_t xdev_hdl, void *blob, u64 *base)
+{
+	int offset = 0;
+	const char *ipname = NULL;
+	const u64 *prop;
+	u64 size;
+
+	if (!blob)
+		return NULL;
+
+	for (offset = fdt_next_node(blob, -1, NULL);
+		offset >= 0;
+		offset = fdt_next_node(blob, offset, NULL)) {
+		ipname = fdt_get_name(blob, offset, NULL);
+		if (ipname && strncmp(ipname, NODE_CLKFREQ_K1,
+		    strlen(NODE_CLKFREQ_K1)) == 0)
+			break;
+	}
+	if (offset < 0)
+		return false;
+	prop = fdt_getprop(blob, offset, PROP_IO_OFFSET, NULL);
+	if (!prop)
+		return -EINVAL;
+
+	*base = be64_to_cpu(prop[0]);
+	size = be64_to_cpu(prop[1]);
+
+	return true;
+}
