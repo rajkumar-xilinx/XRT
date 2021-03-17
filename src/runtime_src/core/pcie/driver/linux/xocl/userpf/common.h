@@ -17,7 +17,7 @@
 #define	_USERPF_COMMON_H
 
 #include "../xocl_drv.h"
-#include "../lib/libqdma/libqdma_export.h"
+//#include "../lib/libqdma/libqdma_export.h"
 #include "xocl_bo.h"
 #include "../xocl_drm.h"
 #include "xocl_ioctl.h"
