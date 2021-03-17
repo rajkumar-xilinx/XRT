@@ -141,6 +141,42 @@ rh_package_list()
     fi
 }
 
+ub_minXRT_package_list()
+{
+    UB_LIST=(\
+     	cmake \
+	gcc \
+	g++ \
+	libdrm-dev \
+	ocl-icd-dev \
+	ocl-icd-libopencl1 \
+	ocl-icd-opencl-dev \
+	opencl-headers  \
+	libboost-dev \
+	libboost-filesystem-dev \
+	libboost-program-options-dev \
+	libncurses5-dev \
+	uuid-dev \
+    )
+
+    if [ $docker == 0 ] && [ $sysroot == 0 ]; then
+        UB_LIST+=(linux-headers-$(uname -r))
+    fi
+
+    #dmidecode is only applicable for x86_64
+    if [ $ARCH == "x86_64" ]; then
+	UB_LIST+=( dmidecode )
+    fi
+
+    # Use GCC8 on ARM64 Ubuntu as GCC7 randomly crashes with Internal Compiler Error on
+    # Travis CI ARM64 platform
+    if [ $ARCH == "aarch64" ]; then
+        UB_LIST+=( gcc-8 )
+        UB_LIST+=( g++-8 )
+    fi
+
+}
+
 ub_package_list()
 {
     UB_LIST=(\
@@ -327,7 +363,7 @@ suse_package_list()
 update_package_list()
 {
     if [ $FLAVOR == "ubuntu" ] || [ $FLAVOR == "debian" ]; then
-        ub_package_list
+        ub_minXRT_package_list
     elif [ $FLAVOR == "centos" ] || [ $FLAVOR == "rhel" ] || [ $FLAVOR == "amzn" ]; then
         rh_package_list
     elif [ $FLAVOR == "fedora" ]; then
