@@ -148,9 +148,6 @@ ub_minXRT_package_list()
 	gcc \
 	g++ \
 	libdrm-dev \
-	ocl-icd-dev \
-	ocl-icd-libopencl1 \
-	ocl-icd-opencl-dev \
 	opencl-headers  \
 	libboost-dev \
 	libboost-filesystem-dev \
