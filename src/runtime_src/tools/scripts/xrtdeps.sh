@@ -148,7 +148,6 @@ ub_minXRT_package_list()
 	gcc \
 	g++ \
 	libdrm-dev \
-	opencl-headers  \
 	libboost-dev \
 	libboost-filesystem-dev \
 	libboost-program-options-dev \
@@ -158,11 +157,6 @@ ub_minXRT_package_list()
 
     if [ $docker == 0 ] && [ $sysroot == 0 ]; then
         UB_LIST+=(linux-headers-$(uname -r))
-    fi
-
-    #dmidecode is only applicable for x86_64
-    if [ $ARCH == "x86_64" ]; then
-	UB_LIST+=( dmidecode )
     fi
 
     # Use GCC8 on ARM64 Ubuntu as GCC7 randomly crashes with Internal Compiler Error on
