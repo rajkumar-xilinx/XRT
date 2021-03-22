@@ -2171,6 +2171,15 @@ static int __icap_xclbin_download(struct icap *icap, struct axlf *xclbin, bool s
 		err = icap_download_bitstream(icap, xclbin);
 		if (err)
 			goto out;
+		header = xrt_xclbin_get_section_hdr(xclbin, PARTITION_METADATA);
+		u64 base;
+		if (header) {
+			bool present = xocl_fdt_get_freq_cnt_eps(xdev,
+					(char *)xclbin + header->m_sectionOffset, &base);
+			ICAP_ERR(icap, "+++1RP+++freq_cnt eps are present: %d, base: 0x%llx", present, base);
+		}
+		size_t start = base + 0x387e02000000;
+		xocl_clock_reconfig_clocks(xdev, start);
 	} else {
 		uuid_copy(&icap->icap_bitstream_uuid, &xclbin->m_header.uuid);
 		ICAP_INFO(icap, "xclbin is generated for flat shell, dont need to program the bitstream ");
@@ -2184,7 +2193,7 @@ static int __icap_xclbin_download(struct icap *icap, struct axlf *xclbin, bool s
 			u64 base;
 			bool present = xocl_fdt_get_freq_cnt_eps(xdev,
 					(char *)xclbin + header->m_sectionOffset, &base);
-			ICAP_ERR(icap, "+++freq_cnt eps are present: %d, base: 0x%llx", present, base);
+			ICAP_ERR(icap, "+++0RP+++freq_cnt eps are present: %d, base: 0x%llx", present, base);
 		}
 
 #endif

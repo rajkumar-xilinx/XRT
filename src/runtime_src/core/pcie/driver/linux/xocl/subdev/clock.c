@@ -969,6 +969,21 @@ done:
 	return err;
 }
 
+static int clock_freq_reconfig_clocks(struct platform_device *pdev, size_t val)
+{
+	struct clock *clock = platform_get_drvdata(pdev);
+	xdev_handle_t xdev = xocl_get_xdev(clock->clock_pdev);
+	int err = 0;
+
+	mutex_lock(&clock->clock_lock);
+	size_t end = val + 0x1000;
+	clock->clock_freq_counters[0] = ioremap_nocache(val, end - val + 1);
+	mutex_unlock(&clock->clock_lock);
+
+	CLOCK_INFO(clock, "+++clk_counter %lx", clock->clock_freq_counters[0]);
+	return err;
+}
+
 static int clock_freq_rescaling(struct platform_device *pdev, bool force)
 {
 	struct clock *clock = platform_get_drvdata(pdev);
@@ -1378,6 +1393,7 @@ static struct xocl_clock_funcs clock_ops = {
 	.freq_scaling_by_topo = clock_freq_scaling_by_topo,
 	.clock_status = clock_status_check,
 	.get_data = clock_get_data,
+	.reconfig_clocks = clock_freq_reconfig_clocks,
 };
 
 static int clock_remove(struct platform_device *pdev)
@@ -1431,9 +1447,9 @@ static int clock_probe(struct platform_device *pdev)
 				ret = -EINVAL;
 				goto failed;
 			} else {
-				CLOCK_INFO(clock, "res[%d] %s mapped @ %lx",
+				CLOCK_INFO(clock, "+++res[%d] %s mapped @ %lx, res->start: %lx",
 				    i, res->name,
-				    (unsigned long)clock->clock_base_address[id]);
+				    (unsigned long)clock->clock_base_address[id], res->start);
 			}
 		}
 	}

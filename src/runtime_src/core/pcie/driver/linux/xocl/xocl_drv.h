@@ -1186,6 +1186,7 @@ struct xocl_clock_funcs {
 	int (*freq_scaling_by_topo)(struct platform_device *pdev,
 		struct clock_freq_topology *topo, int verify);
 	int (*clock_status)(struct platform_device *pdev, bool *latched);
+	int (*reconfig_clocks)(struct platform_device *pdev, size_t val);
 	uint64_t (*get_data)(struct platform_device *pdev, enum data_kind kind);
 };
 #define CLOCK_DEV_INFO(xdev, idx)					\
@@ -1214,6 +1215,13 @@ static inline int xocl_clock_ops_level(xdev_handle_t xdev)
 	(__idx >= 0 ? (CLOCK_DEV_INFO(xdev, __idx).level) : -ENODEV); 	\
 })
 
+#define	xocl_clock_reconfig_clocks(xdev, val)					\
+({ \
+	int __idx = xocl_clock_ops_level(xdev);					\
+	(CLOCK_CB(xdev, __idx, reconfig_clocks) ?				\
+	CLOCK_OPS(xdev, __idx)->reconfig_clocks(CLOCK_DEV(xdev, __idx), val) :	\
+	-ENODEV); \
+})
 #define	xocl_clock_freq_rescaling(xdev, force)					\
 ({ \
 	int __idx = xocl_clock_ops_level(xdev);					\
