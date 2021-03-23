@@ -958,14 +958,17 @@ done:
 	return err;
 }
 
-static int clock_freq_reconfig_clocks(struct platform_device *pdev, size_t start, size_t size)
+static int clock_freq_reconfig_clocks(struct platform_device *pdev, struct clock_counter_info *clk_counter)
 {
 	struct clock *clock = platform_get_drvdata(pdev);
 	xdev_handle_t xdev = xocl_get_xdev(clock->clock_pdev);
 	int err = 0;
 
 	mutex_lock(&clock->clock_lock);
-	clock->clock_freq_counters[0] = ioremap_nocache(start, size);
+	if (clk_counter[0].start)
+		clock->clock_freq_counters[0] = ioremap_nocache(clk_counter[0].start, clk_counter[0].size);
+	if (clk_counter[1].start)
+		clock->clock_freq_counters[1] = ioremap_nocache(clk_counter[1].start, clk_counter[1].size);
 	mutex_unlock(&clock->clock_lock);
 
 	return err;
