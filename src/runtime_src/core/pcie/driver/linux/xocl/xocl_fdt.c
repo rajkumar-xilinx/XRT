@@ -1886,12 +1886,14 @@ const char *xocl_fdt_get_ert_fw_ver(xdev_handle_t xdev_hdl, void *blob)
 	return fw_ver;
 }
 
-bool xocl_fdt_get_freq_cnt_eps(xdev_handle_t xdev_hdl, void *blob, u64 *base)
+bool xocl_fdt_get_freq_cnt_eps(xdev_handle_t xdev_hdl, void *blob, u64 *base, u64 *size)
 {
 	int offset = 0;
 	const char *ipname = NULL;
 	const u64 *prop;
-	u64 size;
+	const u32 *bar_idx;
+	u64 base_end;
+	int bar;
 
 	if (!blob)
 		return NULL;
@@ -1910,8 +1912,14 @@ bool xocl_fdt_get_freq_cnt_eps(xdev_handle_t xdev_hdl, void *blob, u64 *base)
 	if (!prop)
 		return -EINVAL;
 
-	*base = be64_to_cpu(prop[0]);
-	size = be64_to_cpu(prop[1]);
+	offset = 0;
+	bar_idx = fdt_getprop(blob, offset, PROP_BAR_IDX, NULL);
+	bar = bar_idx ? ntohl(*bar_idx) : 0;
+
+	*base = be64_to_cpu(prop[0]) + pci_resource_start(XDEV(xdev_hdl)->pdev, bar);
+	base_end = *base + be64_to_cpu(prop[1]) - 1;
+	*size = base_end - *base + 1;
+	xocl_xdev_info(xdev_hdl, "*base start: %lx, end: %lx, size: 0x%x", *base, base_end, *size);
 
 	return true;
 }

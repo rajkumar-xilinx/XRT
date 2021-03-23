@@ -378,7 +378,6 @@ static unsigned int clock_get_freq_counter_khz_impl(struct clock *clock, int idx
 	BUG_ON(idx > CLOCK_MAX_NUM_CLOCKS);
 	BUG_ON(!mutex_is_locked(&clock->clock_lock));
 
-	CLOCK_ERR(clock, "+++clock_freq_counter: %lx, idx: %d", (unsigned long)clock->clock_freq_counter, idx);
 	if (clock->clock_freq_counter && idx < 2) {
 		/* Versal ACAP doesn't support write */
 		if (!XOCL_DSA_IS_VERSAL(xdev))
@@ -397,8 +396,6 @@ static unsigned int clock_get_freq_counter_khz_impl(struct clock *clock, int idx
 			freq = reg_rd(clock->clock_freq_counter + OCL_CLK_FREQ_COUNTER_OFFSET + idx*sizeof(u32));
 		return freq;
 	}
-
-       CLOCK_ERR(clock, "+++clock_freq_counters[%d]: %lx", idx, (unsigned long)clock->clock_freq_counters[idx]);
 
 	if (clock->clock_freq_counters[idx]) {
 		/* Versal ACAP doesn't support write */
@@ -934,14 +931,6 @@ static int set_and_verify_freqs(struct clock *clock, unsigned short *freqs,
 	if (err)
 		goto done;
 
-	/* skip verify freqs on 0RP shell as clocks & freq_scaler are not in same
-	 * partition, hence clock driver unable to read these eps.
-	 */
-#if 0
-	if (xocl_flat_shell(xdev))
-		return 0;
-#endif
-
 	for (i = 0; i < min(CLOCK_MAX_NUM_CLOCKS, num_freqs); ++i) {
 		if (!freqs[i])
 			continue;
@@ -969,18 +958,16 @@ done:
 	return err;
 }
 
-static int clock_freq_reconfig_clocks(struct platform_device *pdev, size_t val)
+static int clock_freq_reconfig_clocks(struct platform_device *pdev, size_t start, size_t size)
 {
 	struct clock *clock = platform_get_drvdata(pdev);
 	xdev_handle_t xdev = xocl_get_xdev(clock->clock_pdev);
 	int err = 0;
 
 	mutex_lock(&clock->clock_lock);
-	size_t end = val + 0x1000;
-	clock->clock_freq_counters[0] = ioremap_nocache(val, end - val + 1);
+	clock->clock_freq_counters[0] = ioremap_nocache(start, size);
 	mutex_unlock(&clock->clock_lock);
 
-	CLOCK_INFO(clock, "+++clk_counter %lx", clock->clock_freq_counters[0]);
 	return err;
 }
 
@@ -1219,7 +1206,6 @@ static void clock_prev_refresh_addrs(struct clock *clock)
 	CLOCK_INFO(clock, "freq_k1_k2 @ %lx",
 			(unsigned long)clock->clock_freq_counter);
 
-        CLOCK_ERR(clock, "+++clock_freq_counters[0]: %lx, clock_freq_counters[1]: %lx", (unsigned long)clock->clock_freq_counters[0], (unsigned long)clock->clock_freq_counters[1]);
 	clock->clock_freq_counters[2] =
 		xocl_iores_get_base(xdev, IORES_CLKFREQ_HBM);
 	CLOCK_INFO(clock, "freq_hbm @ %lx",
@@ -1447,7 +1433,7 @@ static int clock_probe(struct platform_device *pdev)
 				ret = -EINVAL;
 				goto failed;
 			} else {
-				CLOCK_INFO(clock, "+++res[%d] %s mapped @ %lx, res->start: %lx",
+				CLOCK_INFO(clock, "res[%d] %s mapped @ %lx, res->start: %lx",
 				    i, res->name,
 				    (unsigned long)clock->clock_base_address[id], res->start);
 			}

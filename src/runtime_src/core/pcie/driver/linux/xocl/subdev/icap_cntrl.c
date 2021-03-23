@@ -189,20 +189,6 @@ static int icap_cntrl_remove(struct platform_device *pdev)
 
 	return 0;
 }
-static bool flat_shell_check(struct platform_device *pdev)
-{
-	struct icap_cntrl *icap_cntrl;
-
-	icap_cntrl = platform_get_drvdata(pdev);
-
-	if (icap_cntrl->support_enabled)
-		return true;
-	return false;
-}
-
-static struct xocl_icap_cntrl_funcs ic_ops = {
-	.flat_shell = flat_shell_check,
-};
 
 static int icap_cntrl_probe(struct platform_device *pdev)
 {
@@ -253,12 +239,8 @@ failed:
 	return ret;
 }
 
-struct xocl_drv_private icap_cntrl_priv = {
-	.ops = &ic_ops,
-};
-
 struct platform_device_id icap_cntrl_id_table[] = {
-	{ XOCL_DEVNAME(XOCL_ICAP_CNTRL), (kernel_ulong_t)&icap_cntrl_priv },
+	{ XOCL_DEVNAME(XOCL_ICAP_CNTRL), 0 },
 	{ },
 };
 

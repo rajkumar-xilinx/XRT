@@ -2150,6 +2150,19 @@ static int __icap_xclbin_download(struct icap *icap, struct axlf *xclbin, bool s
 	if (err)
 		goto out;
 
+	/* Try locating the ep_freq_cnt_aclk_kernel_* endpoints in xclbin
+	 * On u2 raptor2 shells (1RP or 2RP or 0RP), these endpoints are
+	 * available in ULP (i.e. in xclbin) but not in partition metadata
+	 */
+	header = xrt_xclbin_get_section_hdr(xclbin, PARTITION_METADATA);
+	u64 base, size;
+	if (header) {
+		bool present = xocl_fdt_get_freq_cnt_eps(xdev,
+				(char *)xclbin + header->m_sectionOffset, &base, &size);
+		if (present)
+			xocl_clock_reconfig_clocks(xdev, base, size);
+	}
+
 	if (retention) {
 		err = icap_reset_ddr_gate_pin(icap);
 		if (err == -ENODEV)
@@ -2171,32 +2184,9 @@ static int __icap_xclbin_download(struct icap *icap, struct axlf *xclbin, bool s
 		err = icap_download_bitstream(icap, xclbin);
 		if (err)
 			goto out;
-		header = xrt_xclbin_get_section_hdr(xclbin, PARTITION_METADATA);
-		u64 base;
-		if (header) {
-			bool present = xocl_fdt_get_freq_cnt_eps(xdev,
-					(char *)xclbin + header->m_sectionOffset, &base);
-			ICAP_ERR(icap, "+++1RP+++freq_cnt eps are present: %d, base: 0x%llx", present, base);
-		}
-		size_t start = base + 0x387e02000000;
-		xocl_clock_reconfig_clocks(xdev, start);
 	} else {
 		uuid_copy(&icap->icap_bitstream_uuid, &xclbin->m_header.uuid);
 		ICAP_INFO(icap, "xclbin is generated for flat shell, dont need to program the bitstream ");
-#if 1
-		/* Try locating the ep_freq_cnt_aclk_kernel_* endpoints in xclbin 
-		 * On u2 raptor2 shells (1RP or 2RP or 0RP), these endpoints are
-		 * available in ULP (i.e. in xclbin) but not in partition metadata
-		 */
-		header = xrt_xclbin_get_section_hdr(xclbin, PARTITION_METADATA);
-		if (header) {
-			u64 base;
-			bool present = xocl_fdt_get_freq_cnt_eps(xdev,
-					(char *)xclbin + header->m_sectionOffset, &base);
-			ICAP_ERR(icap, "+++0RP+++freq_cnt eps are present: %d, base: 0x%llx", present, base);
-		}
-
-#endif
 		err = xocl_clock_freq_rescaling(xocl_get_xdev(icap->icap_pdev), true);
 		if (err)
 			ICAP_ERR(icap, "not able to configure clocks, err: %d", err);
@@ -2220,7 +2210,6 @@ static int __icap_xclbin_download(struct icap *icap, struct axlf *xclbin, bool s
 		if (err)
 			ICAP_ERR(icap, "not able to refresh clock freq");
 	}
-	ICAP_ERR(icap, "++++ subdev/clock err, %d...", err);
 
 	icap_calib(icap, retention);
 

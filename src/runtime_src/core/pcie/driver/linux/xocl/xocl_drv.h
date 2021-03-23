@@ -607,21 +607,6 @@ struct xocl_rom_funcs {
 #define xocl_rom_get_uuid(xdev)				\
 	(ROM_CB(xdev, get_uuid) ? ROM_OPS(xdev)->get_uuid(ROM_DEV(xdev)) : NULL)
 
-/* icap_cnctrl callbacks */
-struct xocl_icap_cntrl_funcs {
-	struct xocl_subdev_funcs common_funcs;
-	bool (*flat_shell)(struct platform_device *pdev);
-};
-
-#define IC_DEV(xdev)	\
-	SUBDEV(xdev, XOCL_SUBDEV_ICAP_CNTRL).pldev
-#define	IC_OPS(xdev)	\
-	((struct xocl_icap_cntrl_funcs *)SUBDEV(xdev, XOCL_SUBDEV_ICAP_CNTRL).ops)
-#define IC_CB(xdev, cb)	\
-	(IC_DEV(xdev) && IC_OPS(xdev) && IC_OPS(xdev)->cb)
-#define	xocl_flat_shell(xdev)		\
-	(IC_CB(xdev, flat_shell) ? IC_OPS(xdev)->flat_shell(IC_DEV(xdev)) : false)
-
 /* version_ctrl callbacks */
 struct xocl_version_ctrl_funcs {
 	struct xocl_subdev_funcs common_funcs;
@@ -1186,7 +1171,7 @@ struct xocl_clock_funcs {
 	int (*freq_scaling_by_topo)(struct platform_device *pdev,
 		struct clock_freq_topology *topo, int verify);
 	int (*clock_status)(struct platform_device *pdev, bool *latched);
-	int (*reconfig_clocks)(struct platform_device *pdev, size_t val);
+	int (*reconfig_clocks)(struct platform_device *pdev, size_t start, size_t size);
 	uint64_t (*get_data)(struct platform_device *pdev, enum data_kind kind);
 };
 #define CLOCK_DEV_INFO(xdev, idx)					\
@@ -1215,11 +1200,11 @@ static inline int xocl_clock_ops_level(xdev_handle_t xdev)
 	(__idx >= 0 ? (CLOCK_DEV_INFO(xdev, __idx).level) : -ENODEV); 	\
 })
 
-#define	xocl_clock_reconfig_clocks(xdev, val)					\
+#define	xocl_clock_reconfig_clocks(xdev, start, size)					\
 ({ \
 	int __idx = xocl_clock_ops_level(xdev);					\
 	(CLOCK_CB(xdev, __idx, reconfig_clocks) ?				\
-	CLOCK_OPS(xdev, __idx)->reconfig_clocks(CLOCK_DEV(xdev, __idx), val) :	\
+	CLOCK_OPS(xdev, __idx)->reconfig_clocks(CLOCK_DEV(xdev, __idx), start, size) :	\
 	-ENODEV); \
 })
 #define	xocl_clock_freq_rescaling(xdev, force)					\
@@ -2151,7 +2136,7 @@ const void *xocl_fdt_getprop(xdev_handle_t xdev_hdl, void *blob, int off,
 			     char *name, int *lenp);
 int xocl_fdt_unblock_ip(xdev_handle_t xdev_hdl, void *blob);
 const char *xocl_fdt_get_ert_fw_ver(xdev_handle_t xdev_hdl, void *blob);
-bool xocl_fdt_get_freq_cnt_eps(xdev_handle_t xdev_hdl, void *blob, u64 *base);
+bool xocl_fdt_get_freq_cnt_eps(xdev_handle_t xdev_hdl, void *blob, u64 *base, u64 *size);
 
 /* init functions */
 int __init xocl_init_userpf(void);
