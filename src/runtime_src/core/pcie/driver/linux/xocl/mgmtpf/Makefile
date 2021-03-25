@@ -58,6 +58,8 @@ xclmgmt-y := \
 	../subdev/flash.o \
 	../subdev/iores.o \
 	../subdev/axigate.o \
+	../subdev/mgmt_msix.o \
+	../subdev/ospi_versal.o \
 	$(drv_common-y) \
 	mgmt-core.o \
 	mgmt-cw.o \

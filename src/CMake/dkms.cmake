@@ -108,10 +108,10 @@ SET (XRT_DKMS_DRIVER_SRCS
   #xocl/subdev/xmc_u2.c
   #xocl/subdev/dna.c
   xocl/subdev/fmgr.c
-  #xocl/subdev/mgmt_msix.c
+  xocl/subdev/mgmt_msix.c
   xocl/subdev/flash.c
   #xocl/subdev/mailbox_versal.c
-  #xocl/subdev/ospi_versal.c
+  xocl/subdev/ospi_versal.c
   xocl/subdev/ert.c
   #xocl/subdev/aim.c
   #xocl/subdev/am.c

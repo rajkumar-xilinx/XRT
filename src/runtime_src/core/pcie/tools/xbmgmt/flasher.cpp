@@ -62,6 +62,10 @@ Flasher::E_FlasherType Flasher::getFlashType(std::string typeStr)
     {
         type = E_FlasherType::OSPIVERSAL;
     }
+    else if (typeStr.compare("qspi_versal") == 0)
+    {
+	type = E_FlasherType::QSPIVERSAL;
+    }
     else
     {
         std::cout << "Unknown flash type: " << typeStr << std::endl;
@@ -138,6 +142,7 @@ int Flasher::upgradeFirmware(const std::string& flasherType,
         }
         break;
     }
+    case QSPIVERSAL:
     case OSPIVERSAL:
     {
         XOSPIVER_Flasher xospi_versal(mDev);

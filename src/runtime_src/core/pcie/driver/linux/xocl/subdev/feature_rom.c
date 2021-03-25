@@ -663,7 +663,7 @@ static int get_header_from_dtb(struct feature_rom *rom)
 	for (i = rom->uuid_len / 2 - 4;
 	    i >= 0 && j < rom->uuid_len;
 	    i -= 4, j += 8) {
-		sprintf(&rom->uuid[j], "%08x", ioread32(rom->base + i));
+		sprintf(&rom->uuid[j], "%08x", i);
 	}
 	xocl_info(&rom->pdev->dev, "UUID %s", rom->uuid);
 
@@ -698,11 +698,12 @@ static int get_header_from_iomem(struct feature_rom *rom)
 	u16	vendor, did;
 	int	ret = 0;
 
-	val = ioread32(rom->base);
+	val = 0;
 	if (val != MAGIC_NUM) {
 		vendor = XOCL_PL_TO_PCI_DEV(pdev)->vendor;
 		did = XOCL_PL_TO_PCI_DEV(pdev)->device;
-		if (vendor == 0x1d0f && (did == 0x1042 || did == 0xf010)) { // MAGIC, we should define elsewhere
+		//if (vendor == 0x1d0f && (did == 0x1042 || did == 0xf010)) { // MAGIC, we should define elsewhere
+		if (1) { // MAGIC, we should define elsewhere
 			xocl_info(&pdev->dev,
 				"Found AWS VU9P Device without featureROM");
 			/*

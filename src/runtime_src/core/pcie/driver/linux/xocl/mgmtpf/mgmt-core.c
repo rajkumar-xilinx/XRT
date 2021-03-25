@@ -1465,6 +1465,7 @@ static int (*drv_reg_funcs[])(void) __initdata = {
 	xocl_init_feature_rom,
 	xocl_init_iores,
 	xocl_init_flash,
+	xocl_init_mgmt_msix,
 	xocl_init_sysmon,
 	xocl_init_mailbox,
 	xocl_init_firewall,
@@ -1474,12 +1475,14 @@ static int (*drv_reg_funcs[])(void) __initdata = {
 	xocl_init_ert,
 	xocl_init_xmc,
 	xocl_init_fmgr,
+	xocl_init_xfer_versal,
 };
 
 static void (*drv_unreg_funcs[])(void) = {
 	xocl_fini_feature_rom,
 	xocl_fini_iores,
 	xocl_fini_flash,
+	xocl_fini_mgmt_msix,
 	xocl_fini_sysmon,
 	xocl_fini_mailbox,
 	xocl_fini_firewall,
@@ -1489,6 +1492,7 @@ static void (*drv_unreg_funcs[])(void) = {
 	xocl_fini_ert,
 	xocl_fini_xmc,
 	xocl_fini_fmgr,
+	xocl_fini_xfer_versal,
 };
 
 static int __init xclmgmt_init(void)
