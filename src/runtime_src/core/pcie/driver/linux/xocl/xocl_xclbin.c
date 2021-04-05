@@ -31,9 +31,7 @@ static int versal_xclbin_pre_download(xdev_handle_t xdev, void *args)
 	uint64_t size;
 	int ret = 0;
 
-	ret = xrt_xclbin_get_section(xclbin, PARTITION_METADATA, &metadata, &size);
-	if (ret)
-		return ret;
+	xrt_xclbin_get_section(xclbin, PARTITION_METADATA, &metadata, &size);
 
 	if (metadata) {
 		arg->num_dev = xocl_fdt_parse_blob(xdev, metadata,
@@ -53,7 +51,7 @@ static int versal_xclbin_download(xdev_handle_t xdev, void *args)
 
 	BUG_ON(!arg->xclbin);
 
-	if (xclbin->m_header.m_mode == XCLBIN_FLAT) {
+	if (xclbin->m_header.m_mode == XCLBIN_FLAT && !(xclbin->m_header.m_actionMask & AM_LOAD_AIE)) {
 		xocl_info(&XDEV(xdev)->pdev->dev,
 		    "xclbin is generated for flat shell, dont need to load PDI");
 		return ret;
