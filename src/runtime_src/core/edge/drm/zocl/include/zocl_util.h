@@ -14,6 +14,7 @@
 
 #include "kds_core.h"
 #include "zocl_error.h"
+#include "zynq_ioctl.h"
 
 #define zocl_err(dev, fmt, args...)     \
 	dev_err(dev, "%s: "fmt, __func__, ##args)
@@ -107,6 +108,7 @@ struct drm_zocl_dev {
 	unsigned int		 cu_num;
 	unsigned int             irq[MAX_CU_NUM];
 	struct sched_exec_core  *exec;
+	struct zocl_ert_user  *ert_user;
 	unsigned int		 num_mem;
 	struct zocl_mem		*mem;
 	struct mutex		 mm_lock;
@@ -151,5 +153,5 @@ struct drm_zocl_dev {
 	struct zocl_watchdog_dev *watchdog;
 };
 
-int zocl_kds_update(struct drm_zocl_dev *zdev);
+int zocl_kds_update(struct drm_zocl_dev *zdev, struct drm_zocl_kds cfg);
 #endif

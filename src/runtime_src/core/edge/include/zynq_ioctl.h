@@ -378,6 +378,18 @@ struct kernel_info {
 	struct argument_info	 args[];
 };
 
+struct drm_zocl_kds {
+	uint32_t slot_size;
+	uint32_t ert:1;
+	uint32_t polling:1;
+	uint32_t cu_dma:1;
+	uint32_t cu_isr:1;
+	uint32_t cq_int:1;
+	uint32_t dataflow:1;
+	uint32_t rw_shared:1;
+	uint32_t unused:25;
+};
+
 /**
  * struct drm_zocl_axlf - Read xclbin (AXLF) device image and map CUs (experimental)
  * used with DRM_IOCTL_ZOCL_READ_AXLF ioctl
@@ -392,6 +404,7 @@ struct drm_zocl_axlf {
 	uint32_t	za_flags;
 	int		za_ksize;
 	char		*za_kernels;
+	struct drm_zocl_kds  kds_cfg;
 };
 
 #define	ZOCL_MAX_NAME_LENGTH		32

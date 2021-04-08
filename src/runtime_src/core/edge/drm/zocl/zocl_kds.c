@@ -31,6 +31,7 @@ MODULE_PARM_DESC(kds_mode,
 		 "enable new KDS (0 = disable (default), 1 = enable)");
 
 int kds_echo = 0;
+extern int ert_user_mode;
 
 static inline void
 zocl_ctx_to_info(struct drm_zocl_ctx *args, struct kds_ctx_info *info)
@@ -179,6 +180,7 @@ static void notify_execbuf(struct kds_command *xcmd, int status)
 	struct kds_client *client = xcmd->client;
 	struct ert_packet *ecmd = (struct ert_packet *)xcmd->execbuf;
 
+	DRM_INFO("%s: invoked, status: %d\n", __func__, status);
 	if (status == KDS_COMPLETED)
 		ecmd->state = ERT_CMD_STATE_COMPLETED;
 	else if (status == KDS_ERROR)
@@ -244,25 +246,47 @@ int zocl_command_ioctl(struct drm_zocl_dev *zdev, void *data,
 		goto out;
 	}
 	xcmd->cb.free = kds_free_command;
+	xcmd->cb.notify_host = notify_execbuf;
+	xcmd->gem_obj = gem_obj;
 
 	//print_ecmd_info(ecmd);
+
+	if (zdev->kds.ert_disable)
+		xcmd->type = KDS_CU;
+	else
+		xcmd->type = KDS_ERT;
 
 	/* TODO: one ecmd to one xcmd now. Maybe we will need
 	 * one ecmd to multiple xcmds
 	 */
-	if (ecmd->opcode == ERT_CONFIGURE)
+	if (ecmd->opcode == ERT_CONFIGURE) {
 		cfg_ecmd2xcmd(to_cfg_pkg(ecmd), xcmd);
+		xcmd->status = KDS_COMPLETED;
+		xcmd->cb.notify_host(xcmd, xcmd->status);
+		goto out1;
+	}
 	else if (ecmd->opcode == ERT_START_CU)
 		start_krnl_ecmd2xcmd(to_start_krnl_pkg(ecmd), xcmd);
 	else if (ecmd->opcode == ERT_START_FA)
 		start_fa_ecmd2xcmd(to_start_krnl_pkg(ecmd), xcmd);
-	xcmd->cb.notify_host = notify_execbuf;
-	xcmd->gem_obj = gem_obj;
+	else {
+		DRM_ERROR("Unsupported command, opcode: %d\n", ecmd->opcode);
+		ret = -EINVAL;
+		goto out1;
+	}
 
 	/* Now, we could forget execbuf */
 	ret = kds_add_command(&zdev->kds, xcmd);
 
+	return ret;
+out1:
+	xcmd->cb.free(xcmd);
 out:
+	/* Don't forget to put gem object if error happen */
+	if (ret < 0)
+		ZOCL_DRM_GEM_OBJECT_PUT_UNLOCKED(gem_obj);
+
+	DRM_ERROR("%s: ret: %d\n", __func__, ret);
 	return ret;
 }
 
@@ -403,9 +427,159 @@ static void zocl_detect_fa_plram(struct drm_zocl_dev *zdev)
 	zdev->kds.plram.size = size;
 }
 
-int zocl_kds_update(struct drm_zocl_dev *zdev)
+static void zocl_cfg_notify(struct kds_command *xcmd, int status)
+{
+	struct ert_packet *ecmd = (struct ert_packet *)xcmd->execbuf;
+	struct kds_sched *kds = (struct kds_sched *)xcmd->priv;
+
+	if (status == KDS_COMPLETED)
+		ecmd->state = ERT_CMD_STATE_COMPLETED;
+	else if (status == KDS_ERROR)
+		ecmd->state = ERT_CMD_STATE_ERROR;
+	else if (status == KDS_TIMEOUT)
+		ecmd->state = ERT_CMD_STATE_TIMEOUT;
+	else if (status == KDS_ABORT)
+		ecmd->state = ERT_CMD_STATE_ABORT;
+
+	DRM_DEBUG("%s: ecmd status: %d, set ecmd->state: %d\n",
+			 __func__, status, ecmd->state);
+	complete(&kds->comp);
+}
+
+/* Construct ERT config command and wait for completion */
+static int zocl_cfg_cmd(struct drm_zocl_dev *zdev, struct kds_client *client,
+			struct ert_packet *pkg, struct drm_zocl_kds *cfg)
+{
+	struct kds_command *xcmd;
+	struct ert_configure_cmd *ecmd = to_cfg_pkg(pkg);
+	struct kds_sched *kds = &zdev->kds;
+	int num_cu = kds_get_cu_total(kds);
+	u32 base_addr = 0xFFFFFFFF;
+	int ret = 0;
+	int i;
+
+	/* Don't send config command if ERT doesn't present */
+	if (!kds->ert)
+		return 0;
+
+	/* Fill header */
+	ecmd->state = ERT_CMD_STATE_NEW;
+	ecmd->opcode = ERT_CONFIGURE;
+	ecmd->type = ERT_CTRL;
+	ecmd->count = 5 + num_cu;
+
+	ecmd->num_cus	= num_cu;
+	ecmd->cu_shift	= 16;
+	ecmd->slot_size	= cfg->slot_size;
+	ecmd->ert	= cfg->ert;
+	ecmd->polling	= cfg->polling;
+	ecmd->cu_dma	= cfg->cu_dma;
+	ecmd->cu_isr	= cfg->cu_isr;
+	ecmd->cq_int	= cfg->cq_int;
+	ecmd->dataflow	= cfg->dataflow;
+	ecmd->rw_shared	= cfg->rw_shared;
+
+	/* Fill CU address */
+	for (i = 0; i < num_cu; i++) {
+		u32 cu_addr;
+		u32 proto;
+
+		cu_addr = kds_get_cu_addr(kds, i);
+		if (base_addr > cu_addr)
+			base_addr = cu_addr;
+
+		/* encode handshaking control in lower unused address bits [2-0] */
+		proto = kds_get_cu_proto(kds, i);
+		cu_addr |= proto;
+		ecmd->data[i] = cu_addr;
+	}
+	ecmd->cu_base_addr = base_addr;
+
+	xcmd = kds_alloc_command(client, ecmd->count * sizeof(u32));
+	if (!xcmd) {
+		DRM_ERROR("%s: Failed to alloc xcmd\n", __func__);
+		ret = -ENOMEM;
+		goto out;
+	}
+	xcmd->cb.free = kds_free_command;
+
+	print_ecmd_info(ecmd);
+	xcmd->type = KDS_ERT;
+	cfg_ecmd2xcmd(ecmd, xcmd);
+	xcmd->cb.notify_host = zocl_cfg_notify;
+	xcmd->priv = kds;
+
+	ret = kds_submit_cmd_and_wait(kds, xcmd);
+	if (ret)
+		goto out;
+
+	if (ecmd->state > ERT_CMD_STATE_COMPLETED) {
+		DRM_ERROR("%s: Cfg command state %d\n", __func__, ecmd->state);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	WARN_ON(ecmd->state != ERT_CMD_STATE_COMPLETED);
+
+	/* If xrt.ini is not disabled, let it determines ERT enable/disable */
+	if (!kds->ini_disable)
+		kds->ert_disable = cfg->ert ? false : true;
+
+	kds->ert_disable = false;
+
+	DRM_INFO("%s: Cfg command completed with status: %d\n",
+			 __func__, ecmd->state);
+
+out:
+	return ret;
+}
+
+int zocl_config_ert(struct drm_zocl_dev *zdev, struct drm_zocl_kds cfg)
+{
+	struct kds_client *client;
+	struct ert_packet *ecmd;
+	struct kds_sched *kds = &zdev->kds;
+	pid_t pid = pid_nr(get_pid(task_pid(current)));
+	int ret = 0;
+
+	/* TODO: Use hard code size is not ideal. Let's refine this later */
+	ecmd = vmalloc(0x1000);
+	if (!ecmd)
+		return -ENOMEM;
+
+	client = kds_get_client(kds, pid);
+	BUG_ON(!client);
+
+	ret = zocl_cfg_cmd(zdev, client, ecmd, &cfg);
+	if (ret) {
+		DRM_ERROR("%s: ERT config command failed\n", __func__);
+		goto out;
+	}
+out:
+	vfree(ecmd);
+	return ret;
+}
+
+int zocl_kds_update(struct drm_zocl_dev *zdev, struct drm_zocl_kds cfg)
 {
 	struct drm_zocl_bo *bo = NULL;
+	int ret = 0;
+
+	/* Detect if ERT subsystem is able to support CU to host interrupt
+	 * This support is added since ERT ver3.0
+	 *
+	 * So, please make sure this is called after subdev init.
+	 */
+	if (zocl_ert_user_gpio_cfg(zdev, 0) == -ENODEV) {
+		DRM_INFO("%s: Not support CU to host interrupt\n", __func__);
+		zdev->kds.cu_intr_cap = 0;
+	} else {
+		DRM_INFO("%s: Shell supports CU to host interrupt\n", __func__);
+		zdev->kds.cu_intr_cap = 1;
+	}
+
+	DRM_INFO("%s: override: Not support CU to host interrupt\n", __func__);
+	zdev->kds.cu_intr_cap = 0;
 
 	if (zdev->kds.plram.bo) {
 		bo = zdev->kds.plram.bo;
@@ -419,5 +593,19 @@ int zocl_kds_update(struct drm_zocl_dev *zdev)
 
 	zocl_detect_fa_plram(zdev);
 	zdev->kds.cu_intr = 0;
-	return kds_cfg_update(&zdev->kds);
+	ret = kds_cfg_update(&zdev->kds);
+	if (ret) {
+		DRM_INFO("%s: KDS configure update failed, ret %d", __func__, ret);
+		goto out;
+	}
+
+	if (ert_user_mode == 1) {
+		zdev->kds.ert_disable = false;
+		/* Construct and send configure command.
+		 * wait for command completion */
+		ret = zocl_config_ert(zdev, cfg);
+	}
+
+out:
+	return ret;
 }

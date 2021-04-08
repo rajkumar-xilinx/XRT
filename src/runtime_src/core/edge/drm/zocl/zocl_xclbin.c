@@ -22,6 +22,7 @@
 #define VIRTUAL_CU(id) (id == (u32)-1)
 
 extern int kds_mode;
+extern int ert_user_mode;
 
 static int
 zocl_fpga_mgr_load(struct drm_zocl_dev *zdev, const char *data, int size, u32 flags)
@@ -632,7 +633,7 @@ zocl_xclbin_read_axlf(struct drm_zocl_dev *zdev, struct drm_zocl_axlf *axlf_obj)
 		goto out0;
 	}
 
-	if (kds_mode == 0) {
+	if (kds_mode == 0 && ert_user_mode == 0) {
 		if (sched_live_clients(zdev, NULL) || sched_is_busy(zdev)) {
 			DRM_ERROR("Current xclbin is in-use, can't change");
 			ret = -EBUSY;
@@ -655,7 +656,7 @@ zocl_xclbin_read_axlf(struct drm_zocl_dev *zdev, struct drm_zocl_axlf *axlf_obj)
 	/* uuid is null means first time load xclbin */
 	if (zocl_xclbin_get_uuid(zdev) != NULL) {
 		/* reset scheduler prior to load new xclbin */
-		if (kds_mode == 0) {
+		if (kds_mode == 0 && ert_user_mode == 0) {
 			ret = sched_reset_exec(zdev->ddev);
 			if (ret)
 				goto out0;
@@ -742,7 +743,21 @@ zocl_xclbin_read_axlf(struct drm_zocl_dev *zdev, struct drm_zocl_axlf *axlf_obj)
 		vfree(zdev->kernels);
 		zdev->kernels = NULL;
 	}
+	DRM_INFO("%s: ksize: %d, flags: 0x%x\n", __func__,
+			 axlf_obj->za_ksize, axlf_obj->za_flags);
 
+#if 1
+	//temp code to check of axlf_obj is having kernel
+	struct kernel_info *kernel;
+	int off = 0;
+	while (off < axlf_obj->za_ksize) {
+		kernel = (struct kernel_info *)(axlf_obj->za_kernels + off);
+		off += sizeof(struct kernel_info);
+		off += sizeof(struct argument_info) * kernel->anums;
+		DRM_INFO("+++%s: kernel->name: %s, next off: %d\n",
+				 __func__, kernel->name, off);
+	}
+#endif
 	if (axlf_obj->za_ksize > 0) {
 		kernels = vmalloc(axlf_obj->za_ksize);
 		if (!kernels) {
@@ -758,14 +773,18 @@ zocl_xclbin_read_axlf(struct drm_zocl_dev *zdev, struct drm_zocl_axlf *axlf_obj)
 		zdev->kernels = kernels;
 	}
 
-	if (kds_mode == 1) {
+	if (kds_mode == 1 || ert_user_mode == 1) {
 		subdev_destroy_cu(zdev);
 		ret = zocl_create_cu(zdev);
-		if (ret)
+		if (ret) {
+			DRM_ERROR("%s: zocl_create_cu ret: %d\n", __func__, ret);
 			goto out0;
-		ret = zocl_kds_update(zdev);
-		if (ret)
+		}
+		ret = zocl_kds_update(zdev, axlf_obj->kds_cfg);
+		if (ret) {
+			DRM_ERROR("%s: zocl_kds_update ret: %d\n", __func__, ret);
 			goto out0;
+		}
 	}
 
 	/* Populating AIE_METADATA sections */

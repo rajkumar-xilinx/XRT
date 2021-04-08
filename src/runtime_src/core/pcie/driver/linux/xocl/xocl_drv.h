@@ -1695,14 +1695,6 @@ struct xocl_intc_funcs {
 	 INTC_OPS(xdev)->csr_write32(INTC_DEV(xdev), val, off) : \
 	 -ENODEV)
 
-enum ert_gpio_cfg {
-	INTR_TO_ERT,
-	INTR_TO_CU,
-	MB_WAKEUP,
-	MB_SLEEP,
-	MB_STATUS,
-};
-
 struct xocl_ert_versal_funcs {
 	struct xocl_subdev_funcs common_funcs;
 	int (* configured)(struct platform_device *pdev);

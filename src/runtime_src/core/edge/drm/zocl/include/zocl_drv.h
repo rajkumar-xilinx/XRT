@@ -172,6 +172,8 @@ zocl_query_kernel(struct drm_zocl_dev *zdev, const char *name)
 
 	while (off < zdev->ksize) {
 		kernel = (struct kernel_info *)(zdev->kernels + off);
+		DRM_INFO("%s: kernel->name: %s, name: %s\n", __func__, kernel->name, name);
+		strcpy(kernel->name, name);
 		if (!strcmp(kernel->name, name))
 			break;
 		off += sizeof(struct kernel_info);
@@ -250,6 +252,12 @@ void update_cu_idx_in_apt(struct drm_zocl_dev *zdev, int apt_idx, int cu_idx);
 
 int subdev_create_cu(struct drm_zocl_dev *zdev, struct xrt_cu_info *info);
 void subdev_destroy_cu(struct drm_zocl_dev *zdev);
+
+/* zocl ert_user driver */
+int zocl_init_ert_user_sched(struct drm_zocl_dev *zdev);
+void zocl_fini_ert_user_sched(struct drm_zocl_dev *zdev);
+int zocl_ert_user_gpio_cfg(struct drm_zocl_dev *zdev, enum ert_gpio_cfg type);
+
 /* Sub device driver */
 extern struct platform_driver cu_driver;
 struct zocl_cu_ops {

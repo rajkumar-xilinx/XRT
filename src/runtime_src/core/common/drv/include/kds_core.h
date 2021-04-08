@@ -33,6 +33,14 @@
 #define kds_dbg(client, fmt, args...)			\
 	dev_dbg(client->dev, " %llx %s: "fmt, (u64)client->dev, __func__, ##args)
 
+enum ert_gpio_cfg {
+	INTR_TO_ERT,
+	INTR_TO_CU,
+	MB_WAKEUP,
+	MB_SLEEP,
+	MB_STATUS,
+};
+
 enum kds_type {
 	KDS_CU		= 0,
 	KDS_ERT,

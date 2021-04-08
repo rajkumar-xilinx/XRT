@@ -19,6 +19,7 @@
 #include "zocl_error.h"
 
 extern int kds_mode;
+extern int ert_user_mode;
 
 /* TODO: remove this once new KDS is ready */
 int zocl_xclbin_ctx(struct drm_zocl_dev *zdev, struct drm_zocl_ctx *ctx,
@@ -34,6 +35,8 @@ zocl_read_axlf_ioctl(struct drm_device *ddev, void *data, struct drm_file *filp)
 	struct drm_zocl_dev *zdev = ZOCL_GET_ZDEV(ddev);
 	int ret;
 
+	DRM_INFO("%s: kds_mode: %d, ert_user_mode: %d\n",
+			 __func__, kds_mode, ert_user_mode);
 	mutex_lock(&zdev->zdev_xclbin_lock);
 	ret = zocl_xclbin_read_axlf(zdev, axlf_obj);
 	mutex_unlock(&zdev->zdev_xclbin_lock);
@@ -62,7 +65,9 @@ zocl_ctx_ioctl(struct drm_device *ddev, void *data, struct drm_file *filp)
 	struct drm_zocl_dev *zdev = ZOCL_GET_ZDEV(ddev);
 	int ret = 0;
 
-	if (kds_mode == 1) {
+	DRM_INFO("%s: args->op: %d, kds_mode: %d, ert_user_mode: %d\n",
+			 __func__, args->op, kds_mode, ert_user_mode);
+	if ((kds_mode == 1) || (ert_user_mode == 1)) {
 		/* Do not acquire zdev_xclbin_lock like zocl_xclbin_ctx().
 		 * New KDS would lock bitstream when open the fist context.
 		 * The lock bitstream would exclude read_axlf_ioctl().
@@ -97,7 +102,7 @@ zocl_info_cu_ioctl(struct drm_device *ddev, void *data, struct drm_file *filp)
 	int cu_idx = args->cu_idx;
 	phys_addr_t addr = args->paddr;
 
-	if (kds_mode == 0 && !exec->configured) {
+	if ((kds_mode == 0) && (ert_user_mode == 0) && !exec->configured) {
 		DRM_ERROR("Schduler is not configured\n");
 		return -EINVAL;
 	}
@@ -127,7 +132,10 @@ zocl_execbuf_ioctl(struct drm_device *dev, void *data, struct drm_file *filp)
 	struct drm_zocl_dev *zdev = dev->dev_private;
 	int ret = 0;
 
-	if (kds_mode == 1)
+	DRM_INFO("%s: kds_mode: %d, ert_user_mode: %d, ert_disable: %d\n",
+			 __func__, kds_mode, ert_user_mode, zdev->kds.ert_disable);
+
+	if (kds_mode == 1 || ert_user_mode == 1)
 		ret = zocl_command_ioctl(zdev, data, filp);
 	else
 		ret = zocl_execbuf_exec(dev, data, filp);

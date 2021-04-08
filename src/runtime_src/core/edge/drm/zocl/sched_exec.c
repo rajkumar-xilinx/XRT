@@ -2680,7 +2680,7 @@ zocl_copy_bo_submit(struct sched_cmd *cmd)
 static int
 penguin_submit(struct sched_cmd *cmd)
 {
-	SCHED_DEBUG("-> %s\n", __func__);
+	SCHED_DEBUG("-> %s opcode(cmd): %d\n", __func__, opcode(cmd));
 
 	/**
 	 * copy bo will be handled as ert command via execbuf. If submission

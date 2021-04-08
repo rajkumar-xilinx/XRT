@@ -52,6 +52,7 @@ static char driver_date[9];
 #endif
 
 extern int kds_mode;
+extern int ert_user_mode;
 
 static const struct vm_operations_struct reg_physical_vm_ops = {
 #ifdef CONFIG_HAVE_IOREMAP_PROT
@@ -496,7 +497,8 @@ static int zocl_mmap(struct file *filp, struct vm_area_struct *vma)
 	 * Still use this approach before it requires to support hardware
 	 * address mapping from higher than 4GB space.
 	 */
-	if (kds_mode == 0 && !zdev->exec->configured) {
+	if ((kds_mode == 0) && (ert_user_mode == 0) &&
+		!zdev->exec->configured) {
 		DRM_ERROR("Schduler is not configured\n");
 		return -EINVAL;
 	}
@@ -568,7 +570,7 @@ static int zocl_client_open(struct drm_device *dev, struct drm_file *filp)
 	if (!fpriv)
 		return -ENOMEM;
 
-	if (kds_mode == 1) {
+	if (kds_mode == 1 || ert_user_mode == 1) {
 		kfree(fpriv);
 		ret = zocl_create_client(dev->dev_private, &filp->driver_priv);
 	} else {
@@ -594,7 +596,7 @@ static void zocl_client_release(struct drm_device *dev, struct drm_file *filp)
 	int retry = 20;
 	int i;
 
-	if (kds_mode == 1) {
+	if (kds_mode == 1 || ert_user_mode == 1) {
 		zocl_destroy_client(dev->dev_private, &filp->driver_priv);
 		return;
 	}
@@ -650,7 +652,7 @@ static unsigned int zocl_poll(struct file *filp, poll_table *wait)
 
 	BUG_ON(!fpriv);
 
-	if (kds_mode == 1)
+	if (kds_mode == 1 || ert_user_mode == 1)
 		return zocl_poll_client(filp, wait);
 
 	poll_wait(filp, &zdev->exec->poll_wait_queue, wait);
@@ -971,6 +973,13 @@ static int zocl_drm_platform_probe(struct platform_device *pdev)
 		ret = zocl_init_sched(zdev);
 		if (ret)
 			goto err_sched;
+	} else if (ert_user_mode == 1) {
+		ret = zocl_init_sched(zdev);
+		DRM_INFO("%s: zocl_init_sched() returns: %d\n", __func__, ret);
+		if (ret)
+			goto err_sched;
+		ret = zocl_init_ert_user_sched(zdev);
+		DRM_INFO("%s: zocl_init_ert_user_sched() returns: %d\n", __func__, ret);
 	} else {
 		ret = sched_init_exec(drm);
 		if (ret)
@@ -1013,7 +1022,7 @@ static int zocl_drm_platform_remove(struct platform_device *pdev)
 	if (zdev->fpga_mgr)
 		fpga_mgr_put(zdev->fpga_mgr);
 
-	if (kds_mode == 0)
+	if (kds_mode == 0 && ert_user_mode == 0)
 		sched_fini_exec(drm);
 
 	zocl_clear_mem(zdev);
@@ -1028,6 +1037,11 @@ static int zocl_drm_platform_remove(struct platform_device *pdev)
 
 	if (kds_mode == 1)
 		zocl_fini_sched(zdev);
+
+	if (ert_user_mode == 1) {
+		zocl_fini_sched(zdev);
+		zocl_fini_ert_user_sched(zdev);
+	}
 
 	kfree(zdev->apertures);
 
