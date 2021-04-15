@@ -52,6 +52,7 @@ enum {
 	XOCL_DSAFLAG_SMARTN			= (1 << 10),
 	XOCL_DSAFLAG_VERSAL			= (1 << 11),
 	XOCL_DSAFLAG_MPSOC			= (1 << 12),
+	XOCL_DSAFLAG_VERSAL_EDGE                = (1 << 13),
 };
 
 /* sysmon flags */
@@ -2156,7 +2157,7 @@ struct xocl_subdev_map {
 #define XOCL_BOARD_MGMT_VERSAL_EDGE                                     \
         (struct xocl_board_private){                                    \
                 .flags          = XOCL_DSAFLAG_VERSAL |                 \
-                        XOCL_DSAFLAG_FIXED_INTR,                        \
+                        XOCL_DSAFLAG_VERSAL_EDGE,                       \
                 .subdev_info    = MGMT_RES_VERSAL_EDGE,                 \
                 .subdev_num = ARRAY_SIZE(MGMT_RES_VERSAL_EDGE),         \
                 .flash_type = FLASH_TYPE_OSPI_VERSAL,                   \
