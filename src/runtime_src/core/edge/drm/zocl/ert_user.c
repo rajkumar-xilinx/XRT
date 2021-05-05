@@ -446,6 +446,10 @@ zocl_ert_cfg_host(struct zocl_ert_user *ert_user, struct ert_user_command *ecmd)
 static void zocl_ert_intc_enable(struct zocl_ert_user *ert_user, bool enable)
 {
 	ERTUSER_INFO("%s: TODO: register ert_inc\n", __func__);
+	if (enable)
+		ert_user_irq_enable();
+	else
+		ert_user_irq_disable();
 }
 
 int zocl_ert_user_gpio_cfg(struct drm_zocl_dev *zdev, enum ert_gpio_cfg type)
@@ -1108,6 +1112,7 @@ int zocl_init_ert_user_sched(struct drm_zocl_dev *zdev)
 	ert_user->num_slots = 128;
 	ert_user->polling_mode = false;
 	zocl_ert_intc_enable(ert_user, true);
+	ert_user->ipi_irq = ert_user_irq_info();//pdev);
 done:
 	if (err) {
 		zocl_fini_ert_user_sched(zdev);

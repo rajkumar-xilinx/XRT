@@ -96,6 +96,20 @@ struct aie_metadata {
 	void *data;
 };
 
+struct ert_user_irq {
+	void __iomem *base;
+	void __iomem *shm_base;
+	void *pdev;
+	uint64_t range;
+	unsigned int ipi_irq;
+	bool irq_mode;
+	atomic_t remote_nkicked; /* 0 - kicked from remote */
+	u32 ipi_mask;
+	struct semaphore	sem;
+	bool ipi_enable;
+	rwlock_t		att_rwlock;
+};
+
 struct drm_zocl_dev {
 	struct drm_device       *ddev;
 	struct fpga_manager     *fpga_mgr;
@@ -109,6 +123,7 @@ struct drm_zocl_dev {
 	unsigned int             irq[MAX_CU_NUM];
 	struct sched_exec_core  *exec;
 	struct zocl_ert_user  *ert_user;
+	struct ert_user_irq *euirq;
 	unsigned int		 num_mem;
 	struct zocl_mem		*mem;
 	struct mutex		 mm_lock;

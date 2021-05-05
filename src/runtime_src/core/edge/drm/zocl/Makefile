@@ -56,6 +56,7 @@ zocl-y := \
 	zocl_generic_cu.o \
 	zocl_error.o \
 	ert_user.o \
+	ert_user_irq.o \
 	zocl_aie.o
 
 obj-m	+= zocl.o

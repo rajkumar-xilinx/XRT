@@ -258,6 +258,12 @@ int zocl_init_ert_user_sched(struct drm_zocl_dev *zdev);
 void zocl_fini_ert_user_sched(struct drm_zocl_dev *zdev);
 int zocl_ert_user_gpio_cfg(struct drm_zocl_dev *zdev, enum ert_gpio_cfg type);
 
+extern struct platform_driver ert_user_irq_driver;
+unsigned int ert_user_irq_info(void);//struct platform_device *pdev);
+int ert_user_irq_init(struct drm_zocl_dev *zdev);
+void ert_user_irq_fini(struct drm_zocl_dev *zdev);
+void ert_user_irq_enable(void);
+void ert_user_irq_disable(void);
 /* Sub device driver */
 extern struct platform_driver cu_driver;
 struct zocl_cu_ops {

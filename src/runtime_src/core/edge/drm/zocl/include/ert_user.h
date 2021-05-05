@@ -123,5 +123,6 @@ struct zocl_ert_user {
 
 	/* ert validate result cache*/
 	struct ert_validate_cmd ert_valid;
+	unsigned int ipi_irq;
 };
 

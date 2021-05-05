@@ -836,7 +836,6 @@ static int zocl_drm_platform_probe(struct platform_device *pdev)
 		irq = platform_get_irq(pdev, index);
 		if (irq < 0)
 			break;
-		DRM_DEBUG("CU(%d) IRQ %d\n", index, irq);
 		zdev->irq[index] = irq;
 	}
 	zdev->cu_num = index;
@@ -978,6 +977,10 @@ static int zocl_drm_platform_probe(struct platform_device *pdev)
 		DRM_INFO("%s: zocl_init_sched() returns: %d\n", __func__, ret);
 		if (ret)
 			goto err_sched;
+#if 1
+	ret = ert_user_irq_init(zdev);
+	DRM_INFO("+++%s: ert_user_irq_init() returns: %d\n", __func__, ret);
+#endif
 		ret = zocl_init_ert_user_sched(zdev);
 		DRM_INFO("%s: zocl_init_ert_user_sched() returns: %d\n", __func__, ret);
 	} else {
@@ -1043,6 +1046,8 @@ static int zocl_drm_platform_remove(struct platform_device *pdev)
 		zocl_fini_ert_user_sched(zdev);
 	}
 
+	ert_user_irq_fini(zdev);
+
 	kfree(zdev->apertures);
 
 	drm_dev_unregister(drm);
@@ -1065,6 +1070,7 @@ static struct platform_driver *const drivers[] = {
 	&zocl_watchdog_driver,
 	&zocl_ospi_versal_driver,
 	&cu_driver,
+//	&ert_user_irq_driver,
 };
 
 static int __init zocl_init(void)
