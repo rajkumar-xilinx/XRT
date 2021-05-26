@@ -238,8 +238,8 @@ static inline bool zocl_eu_thread_sleep_cond(struct zocl_ert_user *ert_user)
 
 	ret = no_event && ((ert_user->polling_mode && polling_sleep) ||
 					   (!ert_user->polling_mode && intr_sleep));
-	if (ert_user->sq.num)
-		ret = 0;
+//	if (ert_user->sq.num)
+//		ret = 0;
 	return ret;
 }
 
@@ -1048,6 +1048,23 @@ done:
 	return exec->bad_state;
 }
 
+static irqreturn_t ert_user_ipi_isr(int irq, void *arg)
+{
+	struct zocl_ert_user *ert_user = arg;
+	u32 val;
+
+	val = ert_user_irq_read_ipi(0x10);//IPI_ISR_OFFSET=0x10
+	printk("+++ipi_irq: %d, irq_rcvd: %d, val: 0x%x\n",
+		   ert_user->ipi_irq, irq, val);
+	if (val) {// & sirq->ipi_mask) {
+		ert_user_irq_write_ipi(0x10, 0x100);//IPI_ISR_OFFSET=0x10
+		up(&ert_user->sem);
+		return IRQ_HANDLED;
+	}
+	printk("++++IRQ_NONE+++\n");
+	return IRQ_NONE;
+}
+
 int zocl_init_ert_user_sched(struct drm_zocl_dev *zdev)
 {
 	struct zocl_ert_user *ert_user;
@@ -1113,6 +1130,10 @@ int zocl_init_ert_user_sched(struct drm_zocl_dev *zdev)
 	ert_user->polling_mode = false;
 	zocl_ert_intc_enable(ert_user, true);
 	ert_user->ipi_irq = ert_user_irq_info();//pdev);
+	err = request_irq(ert_user->ipi_irq, ert_user_ipi_isr, 0,
+					  "ert_user_ipi_isr", ert_user);
+	if (err)
+		ERTUSER_INFO("Failed to request_irq for ipi intr, ret: %d\n", err);
 done:
 	if (err) {
 		zocl_fini_ert_user_sched(zdev);
@@ -1133,6 +1154,9 @@ void zocl_fini_ert_user_sched(struct drm_zocl_dev *zdev)
 
 	if (ert_user->cq_base)
 		iounmap(ert_user->cq_base);
+
+	if (ert_user->ipi_irq)
+		free_irq(ert_user->ipi_irq, ert_user);
 
 	zocl_ert_intc_enable(ert_user, false);
 

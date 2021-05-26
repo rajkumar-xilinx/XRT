@@ -264,6 +264,8 @@ int ert_user_irq_init(struct drm_zocl_dev *zdev);
 void ert_user_irq_fini(struct drm_zocl_dev *zdev);
 void ert_user_irq_enable(void);
 void ert_user_irq_disable(void);
+void ert_user_irq_write_ipi(u32 off, u32 val);
+u32 ert_user_irq_read_ipi(u32 off);
 /* Sub device driver */
 extern struct platform_driver cu_driver;
 struct zocl_cu_ops {

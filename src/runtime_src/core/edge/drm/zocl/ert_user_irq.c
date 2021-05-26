@@ -54,6 +54,16 @@ static const struct of_device_id irq_of_match[] = {
 
 MODULE_DEVICE_TABLE(of, irq_of_match);
 
+u32 ert_user_irq_read_ipi(u32 off)
+{
+	return ioread32(euirq_global->base + off);
+}
+
+void ert_user_irq_write_ipi(u32 off, u32 val)
+{
+	iowrite32(val, euirq_global->base + off);
+}
+
 void ert_user_irq_enable(void)
 {
 	printk("%s called\n", __func__);
@@ -276,9 +286,10 @@ static int ert_user_irq_probe(struct platform_device *pdev)
 	/* clear old IPI interrupt */
 	iowrite32(IPI_MASK, sirq->base + IPI_ISR_OFFSET);
 	/* initialize remote_nkicked */
-    atomic_set(&sirq->remote_nkicked, 1);
+//    atomic_set(&sirq->remote_nkicked, 1);
 	sirq->ipi_mask = IPI_MASK;
 
+#if 0 //Moving this logic to ert_user.c
 	ret = request_irq(sirq->ipi_irq, ert_user_isr, 0, "ert_user_isr", sirq);
 	if (ret) {
 		irq_err(pdev, "Failed to request_irq, ret: %d\n", ret);
@@ -289,7 +300,7 @@ static int ert_user_irq_probe(struct platform_device *pdev)
 	sema_init(&sirq->sem, 1);
 	rwlock_init(&sirq->att_rwlock);
 
-//	measure_ipi_latency(sirq);
+#endif
 	platform_set_drvdata(pdev, sirq);
 
 	ret = sysfs_create_group(&pdev->dev.kobj, &eu_irq_attr_group);
