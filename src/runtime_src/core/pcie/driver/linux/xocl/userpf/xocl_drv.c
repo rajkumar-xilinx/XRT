@@ -1099,7 +1099,7 @@ int xocl_hwmon_sdm_init(struct xocl_dev *xdev)
 	ret = xocl_hwmon_sdm_init_sysfs(xdev, XCL_SDR_VOLTAGE);
 
 done:
-	return ret;
+	return 0;
 }
 
 /*
