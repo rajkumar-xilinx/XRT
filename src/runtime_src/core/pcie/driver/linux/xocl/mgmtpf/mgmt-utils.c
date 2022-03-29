@@ -371,6 +371,8 @@ long xclmgmt_hot_reset(struct xclmgmt_dev *lro, bool force)
 		return -EIO;
 	}
 
+	(void) xocl_hwmon_sdm_get_sensors_list(lro, true);
+
 	/* Workaround for some DSAs. Flush axilite busses */
 	if (dev_info->flags & XOCL_DSAFLAG_AXILITE_FLUSH)
 		platform_axilite_flush(lro);
