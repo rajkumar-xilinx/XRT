@@ -72,6 +72,7 @@ struct xocl_hwmon_sdm {
 	struct mutex            sdm_lock;
 	u64                     cache_expire_secs;
 	ktime_t                 cache_expires;
+	uint8_t                 prev_repo_id;
 };
 
 #define SDM_BUF_IDX_INCR(buf_index, len, buf_len) \
@@ -246,8 +247,14 @@ static int get_sensors_data(struct platform_device *pdev, uint8_t repo_id)
 	struct xocl_hwmon_sdm *sdm = platform_get_drvdata(pdev);
 	ktime_t now = ktime_get_boottime();
 
-	if (ktime_compare(now, sdm->cache_expires) > 0)
+	/*
+	 * When the timer is NOT expired, but if the received repo_id
+	 * is not same as previous repo_id then do update the sensors
+	 */
+	if ((ktime_compare(now, sdm->cache_expires) > 0) || (sdm->prev_repo_id != repo_id)) {
+		sdm->prev_repo_id = repo_id;
 		return hwmon_sdm_update_sensors(pdev, repo_id);
+	}
 
 	return 0;
 }
