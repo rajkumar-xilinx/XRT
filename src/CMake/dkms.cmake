@@ -258,6 +258,7 @@ SET (XRT_DKMS_DRIVER_SRCS
   xocl/subdev/xdma.c
   xocl/subdev/qdma.c
   xocl/subdev/qdma4.c
+  xocl/subdev/qdma_cpm4.c
   xocl/subdev/feature_rom.c
   xocl/subdev/xvc.c
   xocl/subdev/nifd.c
