@@ -2568,6 +2568,9 @@ void xocl_fini_qdma(void);
 int __init xocl_init_qdma4(void);
 void xocl_fini_qdma4(void);
 
+int __init xocl_init_qdma_cpm4(void);
+void xocl_fini_qdma_cpm4(void);
+
 int __init xocl_init_xvc(void);
 void xocl_fini_xvc(void);
 

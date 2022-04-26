@@ -181,6 +181,67 @@ SET (XRT_DKMS_DRIVER_SRCS
   xocl/lib/libqdma4/eqdma_soft_access.c
   xocl/lib/libqdma4/eqdma_soft_access.h
   xocl/lib/libqdma4/eqdma_soft_reg.h
+  xocl/lib/libqdmacpm4/libqdma_config.c
+  xocl/lib/libqdmacpm4/libqdma_config.h
+  xocl/lib/libqdmacpm4/libqdma_export.c
+  xocl/lib/libqdmacpm4/libqdma_export.h
+  xocl/lib/libqdmacpm4/qdma_compat.h
+  xocl/lib/libqdmacpm4/qdma_context.c
+  xocl/lib/libqdmacpm4/qdma_context.h
+  xocl/lib/libqdmacpm4/qdma_debugfs.c
+  xocl/lib/libqdmacpm4/qdma_debugfs_dev.c
+  xocl/lib/libqdmacpm4/qdma_debugfs_dev.h
+  xocl/lib/libqdmacpm4/qdma_debugfs.h
+  xocl/lib/libqdmacpm4/qdma_debugfs_queue.c
+  xocl/lib/libqdmacpm4/qdma_debugfs_queue.h
+  xocl/lib/libqdmacpm4/qdma_descq.c
+  xocl/lib/libqdmacpm4/qdma_descq.h
+  xocl/lib/libqdmacpm4/qdma_device.c
+  xocl/lib/libqdmacpm4/qdma_device.h
+  xocl/lib/libqdmacpm4/qdma_intr.c
+  xocl/lib/libqdmacpm4/qdma_intr.h
+  xocl/lib/libqdmacpm4/qdma_license.h
+  xocl/lib/libqdmacpm4/qdma_mbox.c
+  xocl/lib/libqdmacpm4/qdma_mbox.h
+  xocl/lib/libqdmacpm4/qdma_platform.c
+  xocl/lib/libqdmacpm4/qdma_platform_env.h
+  xocl/lib/libqdmacpm4/qdma_regs.c
+  xocl/lib/libqdmacpm4/qdma_regs.h
+  xocl/lib/libqdmacpm4/qdma_sriov.c
+  xocl/lib/libqdmacpm4/qdma_st_c2h.c
+  xocl/lib/libqdmacpm4/qdma_st_c2h.h
+  xocl/lib/libqdmacpm4/qdma_thread.c
+  xocl/lib/libqdmacpm4/qdma_thread.h
+  xocl/lib/libqdmacpm4/qdma_ul_ext.h
+  xocl/lib/libqdmacpm4/thread.c
+  xocl/lib/libqdmacpm4/thread.h
+  xocl/lib/libqdmacpm4/version.h
+  xocl/lib/libqdmacpm4/xdev.c
+  xocl/lib/libqdmacpm4/xdev.h
+  xocl/lib/libqdmacpm4/qdma_access/qdma_access_common.c
+  xocl/lib/libqdmacpm4/qdma_access/qdma_access_common.h
+  xocl/lib/libqdmacpm4/qdma_access/qdma_access_errors.h
+  xocl/lib/libqdmacpm4/qdma_access/qdma_access_export.h
+  xocl/lib/libqdmacpm4/qdma_access/qdma_access_version.h
+  xocl/lib/libqdmacpm4/qdma_access/qdma_list.c
+  xocl/lib/libqdmacpm4/qdma_access/qdma_list.h
+  xocl/lib/libqdmacpm4/qdma_access/qdma_mbox_protocol.c
+  xocl/lib/libqdmacpm4/qdma_access/qdma_mbox_protocol.h
+  xocl/lib/libqdmacpm4/qdma_access/qdma_platform.h
+  xocl/lib/libqdmacpm4/qdma_access/qdma_reg_dump.h
+  xocl/lib/libqdmacpm4/qdma_access/qdma_resource_mgmt.c
+  xocl/lib/libqdmacpm4/qdma_access/qdma_resource_mgmt.h
+  xocl/lib/libqdmacpm4/qdma_access/eqdma_soft_access/eqdma_soft_access.c
+  xocl/lib/libqdmacpm4/qdma_access/eqdma_soft_access/eqdma_soft_access.h
+  xocl/lib/libqdmacpm4/qdma_access/eqdma_soft_access/eqdma_soft_reg_dump.c
+  xocl/lib/libqdmacpm4/qdma_access/eqdma_soft_access/eqdma_soft_reg.h
+  xocl/lib/libqdmacpm4/qdma_access/qdma_s80_hard_access/qdma_s80_hard_access.c
+  xocl/lib/libqdmacpm4/qdma_access/qdma_s80_hard_access/qdma_s80_hard_access.h
+  xocl/lib/libqdmacpm4/qdma_access/qdma_s80_hard_access/qdma_s80_hard_reg_dump.c
+  xocl/lib/libqdmacpm4/qdma_access/qdma_s80_hard_access/qdma_s80_hard_reg.h
+  xocl/lib/libqdmacpm4/qdma_access/qdma_soft_access/qdma_soft_access.c
+  xocl/lib/libqdmacpm4/qdma_access/qdma_soft_access/qdma_soft_access.h
+  xocl/lib/libqdmacpm4/qdma_access/qdma_soft_access/qdma_soft_reg.h
   xocl/lib/libfdt/fdt.c
   xocl/lib/libfdt/fdt.h
   xocl/lib/libfdt/fdt_addresses.c
