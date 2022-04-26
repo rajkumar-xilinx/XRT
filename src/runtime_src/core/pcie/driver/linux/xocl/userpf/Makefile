@@ -126,16 +126,9 @@ ifeq ($(SYMBOL),1)
 ccflags-y += -g
 endif
 
-#Not working.. $PWD shows path till userpf
-#QDMA_PATH := $(PWD)/../lib/libqdmacpm4/
-#ccflags-y += -I$(QDMA_PATH) -I$(QDMA_PATH)/qdma_access/ -I$(QDMA_PATH)/qdma_access/qdma_soft_access/ -I$(QDMA_PATH)/qdma_access/qdma_s80_hard_access -I$(QDMA_PATH)/qdma_access/eqdma_soft_access
-
-#working option 1:
-QDMA_PATH := /home/saif/raj/XRT/build/Release/usr/src/xrt-2.14.0/driver/xocl/lib/libqdmacpm4
+QDMA_PATH := $(src)/../lib/libqdmacpm4/
+#QDMA_PATH := /home/saif/raj/XRT/build/Release/usr/src/xrt-2.14.0/driver/xocl/lib/libqdmacpm4
 ccflags-y += -I$(QDMA_PATH) -I$(QDMA_PATH)/qdma_access/ -I$(QDMA_PATH)/qdma_access/qdma_soft_access/ -I$(QDMA_PATH)/qdma_access/qdma_s80_hard_access -I$(QDMA_PATH)/qdma_access/eqdma_soft_access
-
-#working option 2:
-#ccflags-y += -I/home/saif/raj/XRT/build/Release/usr/src/xrt-2.14.0/driver/xocl/lib/libqdmacpm4/ -I/home/saif/raj/XRT/build/Release/usr/src/xrt-2.14.0/driver/xocl/lib/libqdmacpm4/qdma_access/qdma_soft_access/ -I/home/saif/raj/XRT/build/Release/usr/src/xrt-2.14.0/driver/xocl/lib/libqdmacpm4/qdma_access/ -I/home/saif/raj/XRT/build/Release/usr/src/xrt-2.14.0/driver/xocl/lib/libqdmacpm4/qdma_access/qdma_s80_hard_access -I/home/saif/raj/XRT/build/Release/usr/src/xrt-2.14.0/driver/xocl/lib/libqdmacpm4/qdma_access/eqdma_soft_access
 
 all:
 	@echo $(PWD)
