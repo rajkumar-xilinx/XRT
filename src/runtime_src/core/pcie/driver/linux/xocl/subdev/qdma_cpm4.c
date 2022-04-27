@@ -1858,7 +1858,7 @@ static int qdma_cpm4_probe(struct platform_device *pdev)
 	for (i = 0, res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 		res;
 		res = platform_get_resource(pdev, IORESOURCE_MEM, ++i)) {
-		if (!strncmp(res->name, NODE_QDMA4, strlen(NODE_QDMA4))) {
+		if (!strncmp(res->name, NODE_QDMA_CPM4, strlen(NODE_QDMA_CPM4))) {
 			ret = xocl_ioaddr_to_baroff(xdev, res->start, &dma_bar,
 							NULL);
 			if (ret) {
@@ -2044,7 +2044,7 @@ struct xocl_drv_private qdma_cpm4_priv = {
 };
 
 static struct platform_device_id qdma_cpm4_id_table[] = {
-	{ XOCL_DEVNAME(XOCL_QDMA4), (kernel_ulong_t)&qdma_cpm4_priv },
+	{ XOCL_DEVNAME(XOCL_QDMA_CPM4), (kernel_ulong_t)&qdma_cpm4_priv },
 	{ },
 };
 
@@ -2052,7 +2052,7 @@ static struct platform_driver	qdma_cpm4_driver = {
 	.probe		= qdma_cpm4_probe,
 	.remove		= qdma_cpm4_remove,
 	.driver		= {
-		.name = XOCL_DEVNAME(XOCL_QDMA4),
+		.name = XOCL_DEVNAME(XOCL_QDMA_CPM4),
 	},
 	.id_table	= qdma_cpm4_id_table,
 };

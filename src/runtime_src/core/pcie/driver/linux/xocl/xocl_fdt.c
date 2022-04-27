@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Xilinx, Inc. All rights reserved.
+ * Copyright (C) 2018-2022 Xilinx, Inc. All rights reserved.
  *
  * Authors:
  *
@@ -383,6 +383,19 @@ static struct xocl_subdev_map subdev_map[] = {
 		.res_array = (struct xocl_subdev_res[]) {
 			{.res_name = NODE_QDMA},
 			{.res_name = NODE_STM},
+			{NULL},
+		},
+		.required_ip = 1,
+		.flags = 0,
+		.build_priv_data = NULL,
+		.devinfo_cb = NULL,
+		.max_level = XOCL_SUBDEV_LEVEL_PRP,
+	},
+	{
+		.id = XOCL_SUBDEV_DMA,
+		.dev_name = XOCL_QDMA_CPM4,
+		.res_array = (struct xocl_subdev_res[]) {
+			{.res_name = NODE_QDMA_CPM4},
 			{NULL},
 		},
 		.required_ip = 1,
