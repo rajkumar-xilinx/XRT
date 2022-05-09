@@ -1,0 +1,4 @@
+[submodule "src/runtime_src/core/pcie/driver/linux/xocl/lib/libqdma_test"]
+	path = src/runtime_src/core/pcie/driver/linux/xocl/lib/libqdma_test
+	url = https://github.com/rajkumar-xilinx/XRT.git
+	branch = submodule_test1
