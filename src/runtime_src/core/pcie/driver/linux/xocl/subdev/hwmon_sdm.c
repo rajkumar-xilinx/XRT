@@ -15,6 +15,7 @@
  * GNU General Public License for more details.
  */
 
+//change 1: git submodule test
 #include <linux/hwmon.h>
 #include <linux/hwmon-sysfs.h>
 #include <linux/string.h>
