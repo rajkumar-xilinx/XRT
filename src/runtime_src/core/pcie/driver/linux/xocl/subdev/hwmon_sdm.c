@@ -16,6 +16,7 @@
  */
 
 //change 1: git submodule test
+//change 2: git submodule test
 #include <linux/hwmon.h>
 #include <linux/hwmon-sysfs.h>
 #include <linux/string.h>
