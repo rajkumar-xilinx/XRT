@@ -1573,8 +1573,13 @@ static int vmr_enable_multiboot(struct platform_device *pdev)
 		xgq->xgq_boot_from_backup ? XGQ_CMD_BOOT_BACKUP : XGQ_CMD_BOOT_DEFAULT);
 }
 
-static int xgq_collect_sensors(struct platform_device *pdev, int sid,
-	char *data_buf, uint32_t len)
+uint8_t buf_c1[] = {0x1, 0xc1, 0x2, 0x0, 0x11, 0x0, 0xF1, 0x0, 0xF1, 0x1};
+uint8_t buf_c2[] = {0x1, 0xc2, 0x2, 0x0, 0x12, 0x0, 0xF2, 0x0, 0xF2, 0x1};
+uint8_t buf_c3[] = {0x1, 0xc3, 0x2, 0x0, 0x13, 0x0, 0xF3, 0x0, 0xF3, 0x1};
+uint8_t buf_c4[] = {0x1, 0xc4, 0x2, 0x0, 0x14, 0x0, 0xF4, 0x0, 0xF4, 0x1};
+
+static int xgq_collect_sensors(struct platform_device *pdev, int aid, int sid,
+	char *data_buf, uint32_t len, uint8_t sensor_id)
 {
 	struct xocl_xgq_vmr *xgq = platform_get_drvdata(pdev);
 	struct xocl_xgq_vmr_cmd *cmd = NULL;
@@ -1585,6 +1590,39 @@ static int xgq_collect_sensors(struct platform_device *pdev, int sid,
 	int ret = 0;
 	int id = 0;
 
+	XGQ_ERR(xgq, "+++API ID: 0x%X, sensor_id: 0x%X received", aid, sensor_id);
+	if ((sensor_id > 0) && (sid == XGQ_CMD_SENSOR_SID_TEMP)) {
+		size_t t = sizeof(buf_c1);
+		strncpy(data_buf, buf_c1, t - 1);
+		data_buf[t] = '\0';
+		for (id = 0; id < t; id++)
+			data_buf[id] = buf_c1[id];
+		return 0;
+	}
+	if ((sensor_id > 0) && (sid == XGQ_CMD_SENSOR_SID_VOLTAGE)) {
+		size_t t = sizeof(buf_c2);
+		strncpy(data_buf, buf_c2, t - 1);
+		data_buf[t] = '\0';
+		for (id = 0; id < t; id++)
+			data_buf[id] = buf_c2[id];
+		return 0;
+	}
+	if ((sensor_id > 0) && (sid == XGQ_CMD_SENSOR_SID_CURRENT)) {
+		size_t t = sizeof(buf_c3);
+		strncpy(data_buf, buf_c3, t - 1);
+		data_buf[t] = '\0';
+		for (id = 0; id < t; id++)
+			data_buf[id] = buf_c3[id];
+		return 0;
+	}
+	if ((sensor_id > 0) && (sid == XGQ_CMD_SENSOR_SID_POWER)) {
+		size_t t = sizeof(buf_c4);
+		strncpy(data_buf, buf_c4, t - 1);
+		data_buf[t] = '\0';
+		for (id = 0; id < t; id++)
+			data_buf[id] = buf_c4[id];
+		return 0;
+	}
 	cmd = kzalloc(sizeof(*cmd), GFP_KERNEL);
 	if (!cmd) {
 		XGQ_ERR(xgq, "kmalloc failed, retry");
@@ -1607,7 +1645,12 @@ static int xgq_collect_sensors(struct platform_device *pdev, int sid,
 	payload = &(cmd->xgq_cmd_entry.sensor_payload);
 	payload->address = address;
 	payload->size = len;
-	payload->aid = XGQ_CMD_SENSOR_AID_GET_SDR;
+	if (sensor_id > 0) {
+		payload->sensor_id = sensor_id;
+	}
+	//Sensor API ID
+	payload->aid = aid;
+	//Sensor request ID
 	payload->sid = sid;
 
 	hdr = &(cmd->xgq_cmd_entry.hdr);
@@ -1660,10 +1703,16 @@ acquire_failed:
 	return ret;
 }
 
-static int xgq_collect_sensors_by_id(struct platform_device *pdev, char *buf,
-	 uint8_t id, uint32_t len)
+static int xgq_collect_sensors_by_repo_id(struct platform_device *pdev, char *buf,
+	 uint8_t repo_id, uint32_t len)
 {
-	return xgq_collect_sensors(pdev, id, buf, len);
+	return xgq_collect_sensors(pdev, XGQ_CMD_SENSOR_AID_GET_SDR, repo_id, buf, len, 0);
+}
+
+static int xgq_collect_sensors_by_sensor_id(struct platform_device *pdev, char *buf,
+	 uint8_t repo_id, uint32_t len, uint8_t sensor_id)
+{
+	return xgq_collect_sensors(pdev, XGQ_CMD_SENSOR_AID_GET_SINGLE_SDR, repo_id, buf, len, sensor_id);
 }
 
 /* sysfs */
@@ -2221,7 +2270,8 @@ static struct xocl_xgq_vmr_funcs xgq_vmr_ops = {
 	.xgq_get_data = xgq_get_data,
 	.xgq_download_apu_firmware = xgq_download_apu_firmware,
 	.vmr_enable_multiboot = vmr_enable_multiboot,
-	.xgq_collect_sensors_by_id = xgq_collect_sensors_by_id,
+	.xgq_collect_sensors_by_repo_id = xgq_collect_sensors_by_repo_id,
+	.xgq_collect_sensors_by_sensor_id = xgq_collect_sensors_by_sensor_id,
 	.vmr_load_firmware = xgq_log_page_fw,
 };
 
