@@ -82,12 +82,12 @@ struct xocl_hwmon_sdm {
 	/* Keep sensor data for maitaining hwmon sysfs nodes */
 	char                    *sensor_data[SDR_TYPE_MAX];
 	bool                    sensor_data_avail[SDR_TYPE_MAX];
-	uint16_t                 *sensor_ids[SDR_TYPE_MAX];
+	uint16_t                *sensor_ids[SENSOR_IDS_MAX];
 	struct xocl_sdr_bdinfo	bdinfo;
 
 	struct mutex            sdm_lock;
 	u64                     cache_expire_secs;
-	ktime_t                 cache_expires[SDR_TYPE_MAX];
+	ktime_t                 cache_expires[SDR_TYPE_MAX][SENSOR_IDS_MAX];
 };
 
 #define SDM_BUF_IDX_INCR(buf_index, len, buf_len) \
@@ -198,9 +198,10 @@ static int get_sdr_type(enum xcl_group_kind kind)
 	return type;
 }
 
-static void update_cache_expiry_time(struct xocl_hwmon_sdm *sdm, uint8_t repo_id)
+static void update_cache_expiry_time(struct xocl_hwmon_sdm *sdm, uint8_t repo_id,
+                                     uint8_t sensor_id)
 {
-	sdm->cache_expires[repo_id] = ktime_add(ktime_get_boottime(),
+	sdm->cache_expires[repo_id][sensor_id] = ktime_add(ktime_get_boottime(),
                                       ktime_set(sdm->cache_expire_secs, 0));
 }
 
@@ -260,9 +261,10 @@ static int get_sensors_data_by_sensor_id(struct platform_device *pdev,
                                          uint8_t repo_id, uint64_t data_args)
 {
 	struct xocl_hwmon_sdm *sdm = platform_get_drvdata(pdev);
+	uint8_t sensor_id = data_args & 0xFF;
 	ktime_t now = ktime_get_boottime();
 
-	if (ktime_compare(now, sdm->cache_expires[repo_id]) > 0)
+	if (ktime_compare(now, sdm->cache_expires[repo_id][sensor_id]) > 0)
 		return hwmon_sdm_update_sensors(pdev, repo_id, data_args);
 
 	return 0;
@@ -1309,32 +1311,19 @@ static int hwmon_sdm_update_sensors(struct platform_device *pdev, uint8_t repo_i
 
 	repo_type = to_sensor_repo_type(repo_id);
 
-	// reads only requested sensor_id data from vmr
-	if (sensor_id > 0) {
-		if (sdm->privileged)
-			ret = hwmon_sdm_update_sensors_by_type(pdev, repo_type, false, data_args);
-		else {
-			kind = to_xcl_sdr_type(repo_type);
-			if (kind < 0) {
-				xocl_err(&pdev->dev, "received invalid xcl grp type: %d", kind);
-				return -EINVAL;
-			}
-			ret = hwmon_sdm_read_from_peer(pdev, repo_type, kind, data_args);
-		}
+	if (sdm->privileged) {
+		ret = hwmon_sdm_update_sensors_by_type(pdev, repo_type, false, data_args);
 	} else {
-		if (sdm->privileged) {
-			ret = hwmon_sdm_update_sensors_by_type(pdev, repo_type, false, 0);
-		} else {
-			kind = to_xcl_sdr_type(repo_type);
-			if (kind < 0) {
-				xocl_err(&pdev->dev, "received invalid xcl grp type: %d", kind);
-				return -EINVAL;
-			}
-			ret = hwmon_sdm_read_from_peer(pdev, repo_type, kind, data_args);
+		kind = to_xcl_sdr_type(repo_type);
+		if (kind < 0) {
+			xocl_err(&pdev->dev, "received invalid xcl grp type: %d", kind);
+			return -EINVAL;
 		}
+		ret = hwmon_sdm_read_from_peer(pdev, repo_type, kind, data_args);
 	}
+
 	if (!ret)
-		update_cache_expiry_time(sdm, repo_id);
+		update_cache_expiry_time(sdm, repo_id, sensor_id);
 
 	return ret;
 }
