@@ -95,6 +95,57 @@ populate_temp(const xrt_core::device * device,
   return pt;
 }
 
+/*
+ * Measure board power using existing sensor readings
+ */
+static double
+populate_power(ptree_type& electricals)
+{
+  double v12v_pex = 0, v12v_aux = 0, v12v_aux0 = 0, v12v_aux1 = 0;
+  double c12v_pex = 0, c12v_aux = 0, c12v_aux0 = 0, c12v_aux1 = 0;
+  double v3v3_pex = 0, c3v3_pex = 0;
+  double power = 0;
+
+  for(auto& kv : electricals) {
+    double voltage = 0, current = 0;
+    const boost::property_tree::ptree& pt_sensor = kv.second;
+    std::string name = pt_sensor.get<std::string>("description");
+    auto volts_is_present = pt_sensor.get<bool>("voltage.is_present");
+    auto amps_is_present = pt_sensor.get<bool>("current.is_present");
+
+    if(volts_is_present)
+      voltage = std::stod(pt_sensor.get<std::string>("voltage.volts"));
+    if(amps_is_present)
+      current = std::stod(pt_sensor.get<std::string>("current.amps"));
+
+    if (boost::iequals(name, "12v_pex")) {
+      v12v_pex = voltage;
+      c12v_pex = current;
+    }
+    else if (boost::iequals(name, "12v_aux")) {
+      v12v_aux = voltage;
+      c12v_aux = current;
+    }
+    else if (boost::iequals(name, "12v_aux_0")) {
+      v12v_aux0 = voltage;
+      c12v_aux0 = current;
+    }
+    else if (boost::iequals(name, "12v_aux_1")) {
+      v12v_aux1 = voltage;
+      c12v_aux1 = current;
+    }
+    else if (boost::iequals(name, "3v3_pex")) {
+      v3v3_pex = voltage;
+      c3v3_pex = current;
+    }
+  }
+
+  power = v12v_pex * c12v_pex + v12v_aux * c12v_aux + v3v3_pex * c3v3_pex +
+          v12v_aux0 * c12v_aux0 + v12v_aux1 * c12v_aux1;
+
+  return power;
+}
+
 /**
  * device query returns a level which
  * need to be converted to human readable power in watts
@@ -204,15 +255,11 @@ read_data_driven_electrical(const std::vector<xq::sdm_sensor_info::data_type>& c
     sensor_array.push_back({"", pt});
   }
 
-  uint64_t bd_power;
-  // iterate over power data, store to ptree by converting to watts.
-  for (const auto& tmp : power) {
-    if (boost::iequals(tmp.label, "Total Power"))
-      bd_power = tmp.input;
-  }
+  double bd_power = 0;
   ptree_type root;
 
   root.add_child("power_rails", sensor_array);
+  bd_power = populate_power(sensor_array);
 
   root.put("power_consumption_watts", bd_power);
   root.put("power_consumption_max_watts", "NA");
@@ -384,22 +431,21 @@ read_legacy_electrical(const xrt_core::device * device)
     populate_sensor<xq::v0v9_int_vcc_vcu_millivolts, xq::noop>(device, "0v9_vccint_vcu", "0.9 Volts Vcc Vcu")});
 
   std::string max_power_watts;
-  std::string power_watts;
   std::string warning;
   try {
     auto power_level = xrt_core::device_query<xq::max_power_level>(device);
     max_power_watts = lvl_to_power_watts(power_level);
-    power_watts = xrt_core::utils::format_base10_shiftdown6(xrt_core::device_query<xq::power_microwatts>(device));
     warning = xq::power_warning::to_string(xrt_core::device_query<xq::power_warning>(device));
   }
   catch (const xq::exception&) {
     max_power_watts = "N/A";
-    power_watts = "N/A";
     warning = "N/A";
   }
 
   ptree_type root;
   root.add_child("power_rails", sensor_array);
+
+  double power_watts = populate_power(sensor_array);
   root.put("power_consumption_max_watts", max_power_watts);
   root.put("power_consumption_watts", power_watts);
   root.put("power_consumption_warning", warning);
