@@ -897,6 +897,7 @@ struct sdm_sensor_info : request
     power       = 2,
     thermal     = 3,
     mechanical  = 4,
+    units		= 5,
   };
 
   /*
@@ -915,6 +916,7 @@ struct sdm_sensor_info : request
     uint32_t average {};
     uint32_t highest {};
     std::string status;
+    std::string units;
   };
   using result_type = std::vector<sensor_data>;
   using req_type = sdr_req_type;
