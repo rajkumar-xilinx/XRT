@@ -1657,6 +1657,97 @@ static int vmr_status_query(struct platform_device *pdev)
 	return vmr_control_op(pdev, XGQ_CMD_VMR_QUERY);
 }
 
+static void clk_throttling_cq_result_copy(struct xocl_xgq_vmr *xgq,
+                                          struct xocl_xgq_vmr_cmd *cmd)
+{
+	struct xgq_cmd_cq_default_payload *payload =
+		(struct xgq_cmd_cq_default_payload *)&cmd->xgq_cmd_cq_payload;
+
+	mutex_lock(&xgq->xgq_lock);
+	memcpy(&xgq->xgq_cq_payload, payload, sizeof(*payload));
+	mutex_unlock(&xgq->xgq_lock);
+}
+
+static int clk_throttling_configure_op(struct platform_device *pdev,
+                                       enum xgq_cmd_clk_throttling_app_id aid)
+{
+	struct xocl_xgq_vmr *xgq = platform_get_drvdata(pdev);
+	struct xocl_xgq_vmr_cmd *cmd = NULL;
+	struct xgq_cmd_clk_throttling_payload *payload = NULL;
+	struct xgq_cmd_sq_hdr *hdr = NULL;
+	int ret = 0;
+	int id = 0;
+
+	if (xgq->xgq_halted) {
+		XGQ_WARN(xgq, "VMR XGQ service is haulted. skip.");
+		return -EIO;
+	}
+
+	cmd = kmalloc(sizeof(*cmd), GFP_KERNEL);
+	if (!cmd) {
+		XGQ_ERR(xgq, "kmalloc failed, retry");
+		return -ENOMEM;
+	}
+
+	memset(cmd, 0, sizeof(*cmd));
+	cmd->xgq_cmd_cb = xgq_complete_cb;
+	cmd->xgq_cmd_arg = cmd;
+	cmd->xgq_vmr = xgq;
+
+	payload = &(cmd->xgq_cmd_entry.clk_throttling_payload);
+	payload->aid = aid;
+
+	hdr = &(cmd->xgq_cmd_entry.hdr);
+	hdr->opcode = XGQ_CMD_OP_CLK_THROTTLING;
+	hdr->state = XGQ_SQ_CMD_NEW;
+	hdr->count = sizeof(*payload);
+	id = get_xgq_cid(xgq);
+	if (id < 0) {
+		XGQ_ERR(xgq, "alloc cid failed: %d", id);
+		goto cid_alloc_failed;
+	}
+	hdr->cid = id;
+
+	/* init condition veriable */
+	init_completion(&cmd->xgq_cmd_complete);
+
+	/* set timout actual jiffies */
+	cmd->xgq_cmd_timeout_jiffies = jiffies + XOCL_XGQ_CONFIG_TIME;
+
+	ret = submit_cmd(xgq, cmd);
+	if (ret) {
+		XGQ_ERR(xgq, "submit cmd failed, cid %d, err: %d", id, ret);
+		goto done;
+	}
+
+	/* wait for command completion */
+	if (wait_for_completion_killable(&cmd->xgq_cmd_complete)) {
+		XGQ_ERR(xgq, "submitted cmd killed");
+		xgq_submitted_cmd_remove(xgq, cmd);
+	}
+
+	ret = cmd->xgq_cmd_rcode;
+
+	if (ret) {
+		XGQ_ERR(xgq, "Clock throttling request failed with err: %d", ret);
+	} else if (aid == XGQ_CMD_CLK_THROTTLING_AID_READ) {
+		clk_throttling_cq_result_copy(xgq, cmd);
+	}
+
+done:
+	remove_xgq_cid(xgq, id);
+
+cid_alloc_failed:
+	kfree(cmd);
+
+	return ret;
+}
+
+static int clk_throttling_status_query(struct platform_device *pdev)
+{
+	return clk_throttling_configure_op(pdev, XGQ_CMD_CLK_THROTTLING_AID_READ);
+}
+
 static int vmr_enable_multiboot(struct platform_device *pdev)
 {
 	struct xocl_xgq_vmr *xgq = platform_get_drvdata(pdev);
@@ -2072,6 +2163,30 @@ static ssize_t vmr_debug_type_store(struct device *dev,
 }
 static DEVICE_ATTR_WO(vmr_debug_type);
 
+static ssize_t clk_throttling_status_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct xocl_xgq_vmr *xgq = platform_get_drvdata(to_platform_device(dev));
+	struct xgq_cmd_cq_clk_throttling_payload *status =
+		(struct xgq_cmd_cq_clk_throttling_payload *)&xgq->xgq_cq_payload;
+	ssize_t cnt = 0;
+
+	//Read clock throttling configuration settings
+	if (clk_throttling_status_query(xgq->xgq_pdev))
+		return -EINVAL;
+
+	cnt += sprintf(buf + cnt, "HAS_CLOCK_THROTTLING:%d\n", status->has_clk_throttling);
+	cnt += sprintf(buf + cnt, "CLOCK_THROTTLING_ENABLED:%d\n", status->clk_throttling_en);
+	cnt += sprintf(buf + cnt, "MAX_POWER_THROTTLING_LIMIT:%u\n", status->max_pwr_throttling_limit);
+	cnt += sprintf(buf + cnt, "MAX_TEMP_THROTTLING_LIMIT:%u\n", status->max_temp_throttling_limit);
+	cnt += sprintf(buf + cnt, "OVRD_POWER_THROTTLING_LIMIT:%u\n", status->ovrd_pwr_throttling_limit);
+	cnt += sprintf(buf + cnt, "OVRD_TEMP_THROTTLING_LIMIT:%u\n", status->ovrd_temp_throttling_limit);
+	cnt += sprintf(buf + cnt, "CLOCK_THROTTLING_MODE:%d\n", status->clk_throttling_mode);
+
+	return cnt;
+}
+static DEVICE_ATTR_RO(clk_throttling_status);
+
 static struct attribute *xgq_attrs[] = {
 	&dev_attr_polling.attr,
 	&dev_attr_boot_from_backup.attr,
@@ -2086,6 +2201,7 @@ static struct attribute *xgq_attrs[] = {
 	&dev_attr_vmr_debug_level.attr,
 	&dev_attr_vmr_debug_dump.attr,
 	&dev_attr_vmr_debug_type.attr,
+	&dev_attr_clk_throttling_status.attr,
 	NULL,
 };
 

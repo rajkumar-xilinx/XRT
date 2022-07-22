@@ -47,6 +47,14 @@
 #define XGQ_CLOCK_WIZ_MAX_RES           4
 
 /**
+ * clock throttling request types
+ */
+enum xgq_cmd_clk_throttling_app_id {
+	XGQ_CMD_CLK_THROTTLING_AID_READ		= 0x1,
+	XGQ_CMD_CLK_THROTTLING_AID_CONFIGURE	= 0x2,
+};
+
+/**
  * sensor data request types
  */
 enum xgq_cmd_sensor_application_id {
@@ -214,6 +222,27 @@ struct xgq_cmd_vmr_control_payload {
 };
 
 /**
+ * struct xgq_cmd_clk_throttling_payload: clock_throttling configuration request command
+ *
+ * @aid: Clock throttling API ID which decides API in VMC.
+ *          0x1 - READ_CLOCK_THROTTLING_CONFIGURATION
+ *          0x2 - SET_CLOCK_THROTTLING_CONFIGURATION
+ * @throttling_enable: enable or disable flag
+ * @pwr_ovrd: power override value
+ * @temp_ovrd: temperature override value
+ *
+ * This payload is used for clock throttling configuration report.
+ */
+struct xgq_cmd_clk_throttling_payload {
+	uint32_t aid:3;
+	uint32_t throttling_en:1;
+	uint32_t pwr_ovrd:16;
+	uint32_t temp_ovrd:8;
+	uint32_t rsvd1:10;
+	uint32_t pad;
+};
+
+/**
  * struct xgq_cmd_sq: vmr xgq command
  *
  * @hdr:		vmr xgq command header
@@ -223,6 +252,8 @@ struct xgq_cmd_vmr_control_payload {
  * @pdi_payload:
  * @xclbin_payload:
  * @sensor_payload:
+ * @vmr_control_payload:
+ * @clk_throttling_payload:
  */
 struct xgq_cmd_sq {
 	struct xgq_cmd_sq_hdr hdr;
@@ -233,6 +264,7 @@ struct xgq_cmd_sq {
 		struct xgq_cmd_data_payload		xclbin_payload;
 		struct xgq_cmd_sensor_payload		sensor_payload;
 		struct xgq_cmd_vmr_control_payload	vmr_control_payload;
+		struct xgq_cmd_clk_throttling_payload	clk_throttling_payload;
 	};
 };
 
@@ -287,6 +319,22 @@ struct xgq_cmd_cq_data_payload {
 };
 
 /**
+ * struct xgq_cmd_cq_clk_throttling_payload: clock throttling status payload
+ *
+ * clock throttling status
+ */
+struct xgq_cmd_cq_clk_throttling_payload {
+	uint64_t has_clk_throttling:1;
+	uint64_t clk_throttling_en:1;
+	uint64_t max_pwr_throttling_limit:16;
+	uint64_t max_temp_throttling_limit:8;
+	uint64_t ovrd_pwr_throttling_limit:16;
+	uint64_t ovrd_temp_throttling_limit:8;
+	uint64_t clk_throttling_mode:2;
+	uint64_t rsvd:12;
+};
+
+/**
  * struct xgq_cmd_cq_vmr_payload: vmr device status payload
  *
  * bitfields for indicting flash partition statistics.
@@ -331,6 +379,7 @@ struct xgq_cmd_cq {
 		struct xgq_cmd_cq_vmr_payload		cq_vmr_payload;
 		struct xgq_cmd_cq_log_page_payload	cq_log_payload;
 		struct xgq_cmd_cq_data_payload		cq_xclbin_payload;
+		struct xgq_cmd_cq_clk_throttling_payload cq_clk_throttling_payload;
 	};
 	uint32_t rcode;
 };
