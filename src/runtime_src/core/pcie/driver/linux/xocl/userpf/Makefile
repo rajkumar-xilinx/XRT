@@ -94,7 +94,6 @@ xocl-y := \
 	../subdev/accel_deadlock_detector.o \
 	../subdev/command_queue.o \
 	../subdev/cfg_gpio.o \
-	../subdev/hwmon_sdm.o \
 	../subdev/ert_ctrl.o \
 	../subdev/cu_xgq.o \
 	$(xocl_lib-y)	\

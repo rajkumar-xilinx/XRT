@@ -1541,7 +1541,7 @@ static int xclmgmt_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	if (!xocl_ps_wait(lro))
 		xocl_xmc_get_serial_num(lro);
 
-	(void) xocl_hwmon_sdm_get_sensors_list(lro, true);
+//	(void) xocl_hwmon_sdm_get_sensors_list(lro, true);
 
 	xocl_drvinst_set_offline(lro, false);
 	return 0;
@@ -1692,7 +1692,6 @@ static int (*drv_reg_funcs[])(void) __initdata = {
 	xocl_init_icap_controller,
 	xocl_init_pcie_firewall,
 	xocl_init_xgq,
-	xocl_init_hwmon_sdm,
 };
 
 static void (*drv_unreg_funcs[])(void) = {
@@ -1728,7 +1727,6 @@ static void (*drv_unreg_funcs[])(void) = {
 	xocl_fini_icap_controller,
 	xocl_fini_pcie_firewall,
 	xocl_fini_xgq,
-	xocl_fini_hwmon_sdm,
 };
 
 static int __init xclmgmt_init(void)

@@ -257,6 +257,7 @@ void xocl_reset_notify(struct pci_dev *pdev, bool prepare)
 			return;
 		}
 
+#if 0
 		if (XOCL_DSA_IS_VERSAL_ES3(xdev)) {
 			ret = xocl_hwmon_sdm_init(xdev);
 			if (ret) {
@@ -264,6 +265,7 @@ void xocl_reset_notify(struct pci_dev *pdev, bool prepare)
 				return;
 			}
 		}
+#endif
 
 		xocl_kds_reset(xdev, xclbin_id);
 		XOCL_PUT_XCLBIN_ID(xdev);
@@ -963,6 +965,7 @@ int xocl_refresh_subdevs(struct xocl_dev *xdev)
 		goto failed;
 	}
 
+#if 0
 	if (XOCL_DSA_IS_VERSAL_ES3(xdev)) {
 		//probe & initialize hwmon_sdm driver only on versal
 		ret = xocl_hwmon_sdm_init(xdev);
@@ -971,6 +974,7 @@ int xocl_refresh_subdevs(struct xocl_dev *xdev)
 			goto failed;
 		}
 	}
+#endif
 
 	(void) xocl_peer_listen(xdev, xocl_mailbox_srv, (void *)xdev);
 
@@ -1910,7 +1914,6 @@ static int (*xocl_drv_reg_funcs[])(void) __initdata = {
 	xocl_init_m2m,
 	xocl_init_config_gpio,
 	xocl_init_command_queue,
-	xocl_init_hwmon_sdm,
 	xocl_init_ert_ctrl,
 };
 
@@ -1953,7 +1956,6 @@ static void (*xocl_drv_unreg_funcs[])(void) = {
 	xocl_fini_intc,
 	xocl_fini_config_gpio,
 	xocl_fini_command_queue,
-	xocl_fini_hwmon_sdm,
 	xocl_fini_ert_ctrl,
 };
 

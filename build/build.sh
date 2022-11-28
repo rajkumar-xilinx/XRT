@@ -268,7 +268,7 @@ fi
 GIT_MODULES=$BUILDDIR/../.gitmodules
 if [ -f "$GIT_MODULES" ]; then
     cd $BUILDDIR/../
-    git submodule update --init
+#    git submodule update --init
     cd $BUILDDIR
 fi
 

@@ -80,7 +80,6 @@ xclmgmt-y := \
 	../subdev/icap_cntrl.o \
 	../subdev/version_ctrl.o \
 	../subdev/pcie_firewall.o \
-	../subdev/hwmon_sdm.o \
 	$(drv_common-y) \
 	mgmt-core.o \
 	mgmt-cw.o \
