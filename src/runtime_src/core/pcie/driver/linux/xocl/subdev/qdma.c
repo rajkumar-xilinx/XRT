@@ -25,7 +25,8 @@
 #include <linux/uio.h>
 #include <linux/version.h>
 #include <linux/dma/amd_qdma.h>
-#include <linux/platform_data/amd_mqdma.h>
+#include "amd_mqdma.h"
+//#include <linux/platform_data/amd_mqdma.h>
 #include "../xocl_drv.h"
 #include "../xocl_drm.h"
 #include "qdma_ioctl.h"
@@ -138,6 +139,7 @@ static int alloc_queues(struct xocl_qdma *qdma, u32 n_queues)
 	}
 
 	for (i = 0; i < qdma->n_queues * 2; i++) {
+		int len = 0;
 		write = i / qdma->n_queues;
 		qidx = i % qdma->n_queues;
 		queue = &qdma->queues[write][qidx];
@@ -159,6 +161,10 @@ static int alloc_queues(struct xocl_qdma *qdma, u32 n_queues)
 		qconf->q_type = write ? Q_H2C : Q_C2H;
 		qconf->qidx = qidx;
 		qconf->irq_en = 0;
+		len = snprintf(qconf->name, 64 /*QDMA_QUEUE_NAME_MAXLEN*/, "qdma");
+		len += snprintf(qconf->name + len, 64 - len, "[bdf]-%s-%u",
+				qconf->st ? "ST" : "MM", qconf->qidx);
+		qconf->name[len] = '\0';
 	}
 
 	xocl_info(&pdev->dev, "Created %d MM queues", qdma->n_queues);
