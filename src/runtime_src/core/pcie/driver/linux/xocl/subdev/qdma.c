@@ -70,7 +70,7 @@ struct xocl_qdma {
 	struct platform_device	*dma_dev;
 	struct semaphore	queues_sem[2]; /* Semaphore, one for each direction */
 	struct mm_queue		*queues[2];
-	struct qdma_queue_conf	qconf[2];
+	struct qdma_queue_conf	qconf[2][8];
 	u32			n_queues; /* Number of bidirectional queues */
 	/*
 	 * Queues usage bitmasks, one for each direction
@@ -148,7 +148,7 @@ static int alloc_queues(struct xocl_qdma *qdma, u32 n_queues)
 		if (!write)
 			queue->queue_id += qdma->n_queues;
 		/* queue basic feature setup */
-		qconf = &qdma->qconf[write];
+		qconf = &qdma->qconf[write][qidx];
 		memset(qconf, 0, sizeof (struct qdma_queue_conf));
 		qconf->wb_status_en =1;
 		qconf->cmpl_status_acc_en=1;
@@ -157,13 +157,11 @@ static int alloc_queues(struct xocl_qdma *qdma, u32 n_queues)
 		qconf->cmpl_stat_en=1;
 		qconf->cmpl_trig_mode=1;
 		qconf->desc_rng_sz_idx = MM_DEFAULT_RINGSZ_IDX;
-		qconf->st = 0; /* memory mapped */
 		qconf->q_type = write ? Q_H2C : Q_C2H;
 		qconf->qidx = qidx;
 		qconf->irq_en = 0;
 		len = snprintf(qconf->name, 64 /*QDMA_QUEUE_NAME_MAXLEN*/, "qdma");
-		len += snprintf(qconf->name + len, 64 - len, "[bdf]-%s-%u",
-				qconf->st ? "ST" : "MM", qconf->qidx);
+		len += snprintf(qconf->name + len, 64 - len, "[bdf]-MM-%u", qconf->qidx);
 		qconf->name[len] = '\0';
 	}
 
@@ -414,8 +412,10 @@ static int qdma_create_dma_dev(struct xocl_qdma *qdma)
 	data.max_dma_queues = qdma_max_queues;
 	data.qsets_base = QDMA_QSETS_BASE;
 	data.qsets_max = QDMA_QSETS_MAX;
-	memcpy(&data.qconf[0], &qdma->qconf[0], sizeof(struct qdma_queue_conf));
-	memcpy(&data.qconf[1], &qdma->qconf[1], sizeof(struct qdma_queue_conf));
+	data.qdma_drv_mode = POLL_MODE;
+	data.master_pf = 1;
+	memcpy(&data.qconf[0], &qdma->qconf[0], qdma_max_queues * sizeof(struct qdma_queue_conf));
+	memcpy(&data.qconf[1], &qdma->qconf[1], qdma_max_queues * sizeof(struct qdma_queue_conf));
 
 	ret = platform_device_add_data(qdma->dma_dev, &data, sizeof(data));
 	if (ret) {
