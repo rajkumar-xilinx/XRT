@@ -53,6 +53,10 @@ unsigned int qdma_max_queues = 8;
 module_param(qdma_max_queues, uint, 0644);
 MODULE_PARM_DESC(qdma_max_queues, "Set number of queues for qdma, default is 8");
 
+static unsigned int qdma_interrupt_mode = 1;
+module_param(qdma_interrupt_mode, uint, 0644);
+MODULE_PARM_DESC(interrupt_mode, "0:auto, 1:poll, 2:direct, 3:intr_ring, default is 2");
+
 struct mm_queue {
 	struct device		dev;
 	struct xocl_qdma	*qdma;
@@ -358,8 +362,10 @@ static void qdma_remove_dma_dev(struct xocl_qdma *qdma)
 
 static int qdma_create_dma_dev(struct xocl_qdma *qdma)
 {
-	struct amdmqdma_platdata data;
 	struct resource res[2] = { 0 };
+	struct amdmqdma_platdata data;
+	struct qdma_queue_conf *qconf;
+	struct qdma_dev_conf *conf;
 	struct dma_slave_map *map;
 	struct pci_dev *pdev;
 	int i, ret, nvec;
@@ -374,6 +380,7 @@ static int qdma_create_dma_dev(struct xocl_qdma *qdma)
 
 	if (!pdev)
 		return -EINVAL;
+	xocl_err(&qdma->pdev->dev, "+++++dev_name: %s", dev_name(&pdev->dev));
 	nvec = pci_msix_vec_count(pdev);
 
 	res[0].start = pci_resource_start(pdev, 0);
@@ -409,13 +416,46 @@ static int qdma_create_dma_dev(struct xocl_qdma *qdma)
 		map->param = QDMA_FILTER_PARAM(&c2h_queue_info);
 	}
 
+	conf = &(data.dev_conf);
+	memset(conf, 0, sizeof(*conf));
+	conf->pdev = pdev;//XDEV(pdev)->pdev;
+	conf->master_pf = 1;
+	conf->qsets_base = QDMA_QSETS_BASE;
+	conf->qsets_max = QDMA_QSETS_MAX;
+	conf->bar_num_user = -1;
+	conf->bar_num_bypass = -1;
+	conf->qdma_drv_mode = qdma_interrupt_mode;
+
+	conf->fp_user_isr_handler = NULL;
+	conf->uld = (unsigned long)qdma;
 	data.max_dma_queues = qdma_max_queues;
-	data.qsets_base = QDMA_QSETS_BASE;
-	data.qsets_max = QDMA_QSETS_MAX;
-	data.qdma_drv_mode = POLL_MODE;
-	data.master_pf = 1;
+	strncpy(data.mod_name, XOCL_MODULE_NAME, sizeof(XOCL_MODULE_NAME));
 	memcpy(&data.qconf[0], &qdma->qconf[0], qdma_max_queues * sizeof(struct qdma_queue_conf));
 	memcpy(&data.qconf[1], &qdma->qconf[1], qdma_max_queues * sizeof(struct qdma_queue_conf));
+#if 1
+	for (i = 0; i < qdma->n_queues * 2; i++) {
+		int len = 0;
+		int qidx, write;
+		write = i / qdma->n_queues;
+		qidx = i % qdma->n_queues;
+		qconf = &qdma->qconf[write][qidx];
+		qconf->wb_status_en =1;
+		qconf->cmpl_status_acc_en=1;
+		qconf->cmpl_status_pend_chk=1;
+		qconf->fetch_credit=1;
+		qconf->cmpl_stat_en=1;
+		qconf->cmpl_trig_mode=1;
+		qconf->desc_rng_sz_idx = MM_DEFAULT_RINGSZ_IDX;
+		qconf->q_type = write ? Q_H2C : Q_C2H;
+		qconf->qidx = qidx;
+		qconf->irq_en = 0;
+		len = snprintf(qconf->name, 64 /*QDMA_QUEUE_NAME_MAXLEN*/, "qdma");
+		len += snprintf(qconf->name + len, 64 - len, "[bdf]-MM-%u", qconf->qidx);
+		qconf->name[len] = '\0';
+		pr_err("+++qconf[%d][%d]: %d %s\n",
+			write, qidx, qconf->q_type, qconf->name);
+	}
+#endif
 
 	ret = platform_device_add_data(qdma->dma_dev, &data, sizeof(data));
 	if (ret) {
