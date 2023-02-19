@@ -155,11 +155,6 @@ static int alloc_queues(struct xocl_qdma *qdma, u32 n_queues)
 		qconf = &qdma->qconf[write][qidx];
 		memset(qconf, 0, sizeof (struct qdma_queue_conf));
 		qconf->wb_status_en =1;
-		qconf->cmpl_status_acc_en=1;
-		qconf->cmpl_status_pend_chk=1;
-		qconf->fetch_credit=1;
-		qconf->cmpl_stat_en=1;
-		qconf->cmpl_trig_mode=1;
 		qconf->desc_rng_sz_idx = MM_DEFAULT_RINGSZ_IDX;
 		qconf->q_type = write ? Q_H2C : Q_C2H;
 		qconf->qidx = qidx;
@@ -418,7 +413,7 @@ static int qdma_create_dma_dev(struct xocl_qdma *qdma)
 
 	conf = &(data.dev_conf);
 	memset(conf, 0, sizeof(*conf));
-	conf->pdev = pdev;//XDEV(pdev)->pdev;
+	conf->pdev = pdev;
 	conf->master_pf = 1;
 	conf->qsets_base = QDMA_QSETS_BASE;
 	conf->qsets_max = QDMA_QSETS_MAX;
@@ -426,13 +421,12 @@ static int qdma_create_dma_dev(struct xocl_qdma *qdma)
 	conf->bar_num_bypass = -1;
 	conf->qdma_drv_mode = qdma_interrupt_mode;
 
-	conf->fp_user_isr_handler = NULL;
 	conf->uld = (unsigned long)qdma;
 	data.max_dma_queues = qdma_max_queues;
 	strncpy(data.mod_name, XOCL_MODULE_NAME, sizeof(XOCL_MODULE_NAME));
 	memcpy(&data.qconf[0], &qdma->qconf[0], qdma_max_queues * sizeof(struct qdma_queue_conf));
 	memcpy(&data.qconf[1], &qdma->qconf[1], qdma_max_queues * sizeof(struct qdma_queue_conf));
-#if 1
+
 	for (i = 0; i < qdma->n_queues * 2; i++) {
 		int len = 0;
 		int qidx, write;
@@ -440,11 +434,6 @@ static int qdma_create_dma_dev(struct xocl_qdma *qdma)
 		qidx = i % qdma->n_queues;
 		qconf = &qdma->qconf[write][qidx];
 		qconf->wb_status_en =1;
-		qconf->cmpl_status_acc_en=1;
-		qconf->cmpl_status_pend_chk=1;
-		qconf->fetch_credit=1;
-		qconf->cmpl_stat_en=1;
-		qconf->cmpl_trig_mode=1;
 		qconf->desc_rng_sz_idx = MM_DEFAULT_RINGSZ_IDX;
 		qconf->q_type = write ? Q_H2C : Q_C2H;
 		qconf->qidx = qidx;
@@ -455,7 +444,6 @@ static int qdma_create_dma_dev(struct xocl_qdma *qdma)
 		pr_err("+++qconf[%d][%d]: %d %s\n",
 			write, qidx, qconf->q_type, qconf->name);
 	}
-#endif
 
 	ret = platform_device_add_data(qdma->dma_dev, &data, sizeof(data));
 	if (ret) {
