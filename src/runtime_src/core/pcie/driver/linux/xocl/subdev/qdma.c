@@ -25,8 +25,8 @@
 #include <linux/uio.h>
 #include <linux/version.h>
 #include <linux/dma/amd_qdma.h>
-//#include "amd_mqdma.h"
-#include <linux/platform_data/amd_mqdma.h>
+#include "amd_mqdma.h"
+//#include <linux/platform_data/amd_mqdma.h>
 #include "../xocl_drv.h"
 #include "../xocl_drm.h"
 #include "qdma_ioctl.h"
@@ -37,7 +37,7 @@
 
 #define MM_DEFAULT_RINGSZ_IDX	0
 
-#define QDMA_QSETS_MAX		256
+#define QDMA_QSETS_MAX		64
 #define QDMA_QSETS_BASE		0
 
 #define QDMA_REQ_TIMEOUT_MS	10000
@@ -51,10 +51,6 @@ MODULE_PARM_DESC(qdma_max_queues, "Set number of queues for qdma, default is 8")
 static unsigned int qdma_interrupt_mode = 1;
 module_param(qdma_interrupt_mode, uint, 0644);
 MODULE_PARM_DESC(interrupt_mode, "0:auto, 1:poll, 2:direct, 3:intr_ring, default is 2");
-
-unsigned int skip_dma_chan_err = 1;
-module_param(skip_dma_chan_err, uint, 0644);
-MODULE_PARM_DESC(skip_dma_chan_err, "skip_dma_chan_err used in debugging");
 
 struct mm_queue {
 	struct dma_chan		*chan;
@@ -175,7 +171,7 @@ static int alloc_queues(struct xocl_qdma *qdma, u32 n_queues)
 		len += snprintf(qconf->name + len, 64 - len, "-MM-%s-%u", write ? "H2C" : "C2H", qconf->qidx);
 		qconf->name[len] = '\0';
 		pr_debug("%s: qconf[%d][%d]: %d (c2h=1, h2c=0) %s\n", __func__,
-			write, qidx, qconf->q_type, qconf->name);
+			 write, qidx, qconf->q_type, qconf->name);
 		qconf = &qdma->qconf[write][qidx];
 		memset(qconf, 0, sizeof (struct qdma_queue_conf));
 		qconf->wb_status_en =1;
@@ -200,7 +196,8 @@ static void release_queue(struct platform_device *pdev, u32 dir, u32 q_num)
 {
 	struct xocl_qdma *qdma;
 
-	xocl_err(&pdev->dev, "[Debug]%s: %d, dir: %d, q_num: %d\n", __func__, __LINE__, dir, q_num);
+	pr_info("[Debug]%s: %d, dir: %d, q_num: %d\n", __func__, __LINE__,
+		dir, q_num);
 
 	qdma = platform_get_drvdata(pdev);
         set_bit(q_num, &qdma->queues_bitmap[dir]);
@@ -233,11 +230,13 @@ static int acquire_queue(struct platform_device *pdev, u32 dir)
 	for (q_num = 0; q_num < qdma->n_queues; q_num++) {
 		result = test_and_clear_bit(q_num,
 			&qdma->queues_bitmap[write]);
-		pr_err("%s: qnum: %d, queues_bitmap[%d]: 0X%X\n", __func__, q_num, dir, qdma->queues_bitmap[dir]);
+		pr_err("%s: qnum: %d, queues_bitmap[%d]: 0X%X\n", __func__,
+		       q_num, dir, qdma->queues_bitmap[dir]);
 		if (result)
 			break;
         }
-	pr_info("%s: queues[%d][%d].qconf.name: %s\n", __func__, write, q_num, qdma->queues[write][q_num].qconf.name);
+	pr_debug("%s: queues[%d][%d].qconf.name: %s\n", __func__, write, q_num,
+	       qdma->queues[write][q_num].qconf.name);
 
 	if (strlen(qdma->queues[write][q_num].qconf.name) == 0) {
 		xocl_err(&pdev->dev, "queue not started, queue %d", q_num);
@@ -245,7 +244,7 @@ static int acquire_queue(struct platform_device *pdev, u32 dir)
 //		q_num = -EINVAL;
 	}
 out:
-	xocl_err(&pdev->dev, "[Debug]%s: dir: %d, q_num: %d\n", __func__, dir, q_num);
+	pr_info("[Debug]%s: dir: %d, q_num: %d\n", __func__, dir, q_num);
 	return 0;//q_num;
 }
 
@@ -275,6 +274,8 @@ static void qdma_queue_req_complete(void *param)
 {
 	struct mm_queue *queue = param;
 
+	pr_info("%s: complete() qconf.name: %s\n", __func__,
+		queue->qconf.name);
 	complete(&queue->req_compl);
 }
 
@@ -283,8 +284,9 @@ static ssize_t qdma_migrate_bo(struct platform_device *pdev,
 			       u64 paddr, u32 q_num, u64 len)
 {
 	struct dma_async_tx_descriptor *tx;
-	enum dma_data_direction dma_dir;
 	struct dma_slave_config cfg;
+	enum dma_data_direction dma_dir;
+	dma_addr_t dst_addr, src_addr;
 	struct mm_queue *queue;
 	pid_t pid = current->pid;
 	struct pci_dev *pci_dev;
@@ -294,8 +296,10 @@ static ssize_t qdma_migrate_bo(struct platform_device *pdev,
 	u32 nents;
 
 	qdma = platform_get_drvdata(pdev);
-	pr_info("%s: TID %d, q_num:%d, Offset: 0x%llx, write: %d", __func__,
-		pid, q_num, paddr, write);
+
+	pr_info("%s: TID %d, q_num:%d, Offset: 0x%llx, write: %d, len: %d, paddr: 0x%p",
+		__func__, pid, q_num, paddr, write, len, paddr);
+
 	xdev = xocl_get_xdev(pdev);
 
 	queue = &qdma->queues[write][q_num];
@@ -320,14 +324,12 @@ static ssize_t qdma_migrate_bo(struct platform_device *pdev,
 
 	sgt->nents = nents;
 
-	xocl_info(&pdev->dev, "%s: before dmaengine_slave_config(), nents: %d\n", __func__, nents);
 	ret = dmaengine_slave_config(queue->chan, &cfg);
 	if (ret) {
 		xocl_err(&pdev->dev, "failed to config dma: %ld", ret);
 		return ret;
 	}
 
-	xocl_info(&pdev->dev, "%s: before dmaengine_prep_slave_sg()\n", __func__);
 	tx = dmaengine_prep_slave_sg(queue->chan, sgt->sgl, nents, cfg.direction, 0);
 	if (!tx) {
 		dev_err(&pdev->dev, "failed to prep slave sg");
@@ -338,24 +340,22 @@ static ssize_t qdma_migrate_bo(struct platform_device *pdev,
 	tx->callback = qdma_queue_req_complete;
 	tx->callback_param = queue;
 
-	xocl_info(&pdev->dev, "%s: before dmaengine_submit()\n", __func__);
 	queue->dma_cookie = dmaengine_submit(tx);
 
-	xocl_info(&pdev->dev, "%s: before dma_async_issue_pending()\n", __func__);
 	dma_async_issue_pending(queue->chan);
-
-	xocl_info(&pdev->dev, "%s: before wait_for_completion_timeout()\n", __func__);
+#if 0
 	if (!wait_for_completion_timeout(&queue->req_compl,
-					 msecs_to_jiffies(QDMA_REQ_TIMEOUT_MS))) {
+	    msecs_to_jiffies(QDMA_REQ_TIMEOUT_MS))) {
 		dev_err(&pdev->dev, "dma timeout");
 		ret = -EIO;
 	} else {
 		ret = len;
 		queue->total_trans_bytes += len;
 	}
-	xocl_info(&pdev->dev, "%s: before dma_unmap_sg()\n", __func__);
-	dma_unmap_sg(&pci_dev->dev, sgt->sgl, sgt->orig_nents, cfg.direction);
-	xocl_info(&pdev->dev, "%s: done\n", __func__);
+#endif
+	ret = len;
+	queue->total_trans_bytes += len;
+	dma_unmap_sg(&pci_dev->dev, sgt->sgl, sgt->orig_nents, dma_dir);
 
 	return ret;
 }
@@ -379,12 +379,12 @@ static struct amdmqdma_queue_info c2h_queue_info = {
 
 static void qdma_remove_dma_dev(struct xocl_qdma *qdma)
 {
-
 	if (!qdma) {
 		pr_err("%s: qdma is NULL\n", __func__);
 		return;
 	}
 	platform_device_unregister(qdma->dma_dev);
+	pr_info("%s: done, after platform_device_unregister()\n", __func__);
 }
 
 static int qdma_configure_dma_chans(struct xocl_qdma *qdma)
@@ -392,6 +392,15 @@ static int qdma_configure_dma_chans(struct xocl_qdma *qdma)
 	struct mm_queue *queue;
 	u32 write, qidx;
 	int i, ret;
+
+	sema_init(&qdma->queues_sem[0], qdma->n_queues);
+	sema_init(&qdma->queues_sem[1], qdma->n_queues);
+	/* Initialize bit mask to represent individual queues */
+	qdma->queues_bitmap[0] = BIT(qdma->n_queues);
+	qdma->queues_bitmap[0]--;
+	qdma->queues_bitmap[1] = qdma->queues_bitmap[0];
+	//qdma->queues_bitmap[0] = GENMASK_ULL(qdma->n_queues - 1, 0);
+	//qdma->queues_bitmap[1] = qdma->queues_bitmap[0];
 
 	for (i = 0; i < qdma->n_queues * 2; i++) {
 		write = i / qdma->n_queues;
@@ -407,17 +416,6 @@ static int qdma_configure_dma_chans(struct xocl_qdma *qdma)
 		}
 		init_completion(&queue->req_compl);
 	}
-
-	sema_init(&qdma->queues_sem[0], qdma->n_queues);
-	sema_init(&qdma->queues_sem[1], qdma->n_queues);
-	/* Initialize bit mask to represent individual queues */
-	qdma->queues_bitmap[0] = BIT(qdma->n_queues);
-	qdma->queues_bitmap[0]--;
-	qdma->queues_bitmap[1] = qdma->queues_bitmap[0];
-	//qdma->queues_bitmap[0] = GENMASK_ULL(qdma->n_queues - 1, 0);
-	//qdma->queues_bitmap[1] = qdma->queues_bitmap[0];
-	pr_info("%s: queues_bitmap[0]: 0X%X, queues_bitmap[1]: 0X%X",
-		__func__, qdma->queues_bitmap[0], qdma->queues_bitmap[1]);
 
 	return 0;
 }
@@ -492,46 +490,27 @@ static int qdma_create_dma_dev(struct xocl_qdma *qdma)
 	conf->uld = (unsigned long)qdma;
 	strncpy(data.mod_name, XOCL_MODULE_NAME, sizeof(XOCL_MODULE_NAME));
 
+#if 0
+	for (i = 0; i < qdma->n_queues * 2; i++) {
+		int qidx, write;
+		write = i / qdma->n_queues;
+		qidx = i % qdma->n_queues;
+		qconf = &qdma->qconf[write][qidx];
+		pr_info("%s: qconf[%d][%d]: %d %s\n", __func__,
+			write, qidx, qconf->q_type, qconf->name);
+	}
+#endif
 	memcpy(&data.qconf[0], &qdma->qconf[0], qdma_max_queues * sizeof(struct qdma_queue_conf));
 	memcpy(&data.qconf[1], &qdma->qconf[1], qdma_max_queues * sizeof(struct qdma_queue_conf));
 
 
-#if 1
-	pr_info("%s: before platform_device_register_resndata()\n", __func__);
 	qdma->dma_dev = platform_device_register_resndata(&qdma->pdev->dev,
 			"amdmqdma", PLATFORM_DEVID_AUTO, res, RESOURSE_LEN, &data, sizeof(data));
 	if (!qdma->dma_dev) {
 		pr_err("%s: failed to alloc dma device", __func__);
 		return -ENOMEM;
 	}
-#else
-	qdma->dma_dev = platform_device_alloc("amdmqdma", PLATFORM_DEVID_AUTO);
-	if (!qdma->dma_dev) {
-		xocl_err(&qdma->pdev->dev, "failed to alloc dma device");
-		return -ENOMEM;
-	}
 
-	pr_err("+++%s: before platform_device_add_resources()\n", __func__);
-	ret = platform_device_add_resources(qdma->dma_dev, res, 2);
-	if (ret) {
-		xocl_err(&qdma->pdev->dev, "failed to add resource: %d", ret);
-		goto failed;
-	}
-
-	pr_err("+++%s: before platform_device_add_data()\n", __func__);
-	ret = platform_device_add_data(qdma->dma_dev, &data, sizeof(data));
-	if (ret) {
-		xocl_err(&qdma->pdev->dev, "failed to add data: %d", ret);
-		goto failed;
-	}
-
-	pr_err("+++%s: before platform_device_add()\n", __func__);
-	ret = platform_device_add(qdma->dma_dev);
-	if (ret) {
-		xocl_err(&qdma->pdev->dev, "failed to add qdma dev: %d", ret);
-		goto failed;
-	}
-#endif
 	pr_info("%s: done, successfully registered and received dma handle\n", __func__);
 	return 0;
 failed:
@@ -638,20 +617,17 @@ static int qdma_probe(struct platform_device *pdev)
 		goto failed;
 	}
 
-	pr_info("%s: before qdma_create_dma_dev()\n", __func__);
 	ret = qdma_create_dma_dev(qdma);
 	if (ret)
 		goto failed;
 
-	pr_info("%s: before qdma_configure_dma_chans()\n", __func__);
 	ret = qdma_configure_dma_chans(qdma);
 	if (ret) {
-		pr_err("%s: qdma_configure_dma_chans failed, err: %d\n", __func__, ret);
-		if (!skip_dma_chan_err)
-			goto failed;
+		pr_err("%s: qdma_configure_dma_chans failed, err: %d\n",
+		       __func__, ret);
+		goto failed;
 	}
 
-	pr_info("%s: done\n", __func__);
 	return 0;
 
 failed:
@@ -671,22 +647,17 @@ static int qdma_remove(struct platform_device *pdev)
 {
 	struct xocl_qdma *qdma = platform_get_drvdata(pdev);
 
-	pr_err("[Debug]%s: %d\n", __func__, __LINE__);
-
 	if (!qdma) {
 		pr_err("%s: qdma driver data is NULL", __func__);
 		return -EINVAL;
 	}
 
-	pr_err("[Debug]%s: %d\n", __func__, __LINE__);
 	free_queues(pdev);
 
 #if 0
-	xocl_err(&pdev->dev, "[Debug]%s: %d\n", __func__, __LINE__);
 	qdma_remove_dma_dev(qdma);
 #endif
 
-	pr_err("[Debug]%s: %d\n", __func__, __LINE__);
 	platform_set_drvdata(pdev, NULL);
 	return 0;
 }
